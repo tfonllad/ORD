@@ -4,11 +4,17 @@ import java.rmi.registry.*;
 import java.net.*;
 
 public class Client extends UnicastRemoteObject implements Client_itf {
+	
+	// Vérifier qu'on a le droit de rajouter un attribut. Je suis pas
+	// certain des consignes
+	private HashMap<String,int> localHMName;
+	private HashMap<int,SharedObject_itf> localHMID;
 
 	public Client() throws RemoteException {
 		super();
+		this.localHMName = new HashMapName<String,SharedObject_itf>;
 	}
-
+	
 
 ///////////////////////////////////////////////////
 //         Interface to be used by applications
@@ -20,14 +26,27 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	
 	// lookup in the name server
 	public static SharedObject lookup(String name) {
+		//appel sur serveur avec name1 :
+		String name1 = name+this.localHMID.get(this.localHMName.get(name).toString());
 	}		
 	
 	// binding in the name server
 	public static void register(String name, SharedObject_itf so) {
+		//Enregistrement local		
+		objID = this.localHMID.get(so);
+		this.localHMName.put(name,objID); 
+
+		//appel serveur .register( name+objID,objID)
+		
 	}
 
 	// creation of a shared object
 	public static SharedObject create(Object o) {
+		//communication avec le server, renvoit un id idObj
+		
+		//local
+		sObj = new SharedObject();
+		this.localHMID.put(idObj,sObj);		
 	}
 	
 /////////////////////////////////////////////////////////////
