@@ -21,7 +21,18 @@ public class Server implements Serveur_itf{
 	* @throws RemoteException
 	**/
 	public int lookup(String name) throws java.rmi.RemoteException{
-		int resID = hmID.get(this.hmName.get(name));	
+		ServerObject sObj = this.hmName.get(name);
+		int resID = sObj.getID();
+		sObj.lockNI();
+		while(sObj.getLockState()==Lock.NI){
+			try{
+				sObj.awaitNI();	
+			}catch(InterruptedException){
+			}
+		}
+			//Everyone is now allowed to lookup;
+			sObj.signalNI();
+		sObj.unlockNI();
 		return resID;		
 	} 
 	
@@ -45,14 +56,22 @@ public class Server implements Serveur_itf{
 	* @throws RemoteException
 	**/
 	public int create(Object o) throws java.rmi.RemoteException{
-			int objID =  o.hashcode(); //Faut-il désérialiser ?
-			ServerObject sObj = new ServerObject(objID);
+			int objID =  o.hashcode();
+			ServerObject sObj = new ServerObject(objID,Lock.NI);
+
 			this.hmID.put(objID,sobj);}
 		return objID;
 	}
 	
-	public void initialize(int id,Client_itf client) throws java.rmi.RemoteException{{
+	/**Method initialize : add the client to the list of client disposing of
+ 	* up-to-date SharedObject. The Client here did call create.
+	* @param id : id of the ServerObject
+	* @param client : Client_itf identify the client
+	* @return void
+	**/
+	public void initialize(int id,Client_itf client) throws java.rmi.RemoteException{
 		this.hmID.get(id).addClient(client);
+		this.hmID.get(id).signalID();
 	}
 
 	public static void main(String args[]){

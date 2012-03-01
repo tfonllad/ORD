@@ -72,6 +72,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public static SharedObject create(Object o) {
 		//communication avec le server, renvoit un id idObj
 		try{
+			
 			int idObj = this.server.create(o);		
 			this.server.initialize(idObj);	
 		}catch(RemoteException r){
