@@ -7,8 +7,13 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	
 	// Vérifier qu'on a le droit de rajouter un attribut. Je suis pas
 	// certain des consignes
-	private HashMap<String,int> localHMName;
+	
 	private HashMap<int,SharedObject_itf> localHMID;
+	private Server_itf server;
+	
+	public SharedObject getSharedObject(int id){
+		return this.get(id);
+	}
 
 	public Client() throws RemoteException {
 		super();
@@ -22,31 +27,59 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// initialization of the client layer
 	public static void init() {
+		this.localHMID = new HashMap<int,SharedObject_itf>();
+		String URL;
+		//Connexion
+		try{ 	
+			int port = 1234;
+			URL="//"+InetAdress.getLocalHost().getHostName()+":"+port+"/Server"; 
+			Server_itf server = (Server_itf) Naming.lookup(URL);
+			this.server = server;
+
+		}catch(Exception e){
+			System.out.println("Faild to connect to the Server");
+			e.printStackTrace();
+		}
 	}
 	
 	// lookup in the name server
-	public static SharedObject lookup(String name) {
-		//appel sur serveur avec name1 :
-		String name1 = name+this.localHMID.get(this.localHMName.get(name).toString());
+
+	public static SharedObject lookup(String name){
+		try{
+			int idObj = this.server.lookup(name);
+			SharedObject sobj = newSharedObject(id,this.server.getShardObject(id).object);
+			return sobj;
+
+		}catch(RemoteException r){
+		}
+					
 	}		
 	
 	// binding in the name server
 	public static void register(String name, SharedObject_itf so) {
 		//Enregistrement local		
-		objID = this.localHMID.get(so);
-		this.localHMName.put(name,objID); 
+		int objID = this.localHMID.get(so);
 
-		//appel serveur .register( name+objID,objID)
-		
+		try{
+			this.server.register(name,objID);
+		}catch(RemoteException r){
+			r.printStackTrace();
+		}
+
 	}
 
 	// creation of a shared object
 	public static SharedObject create(Object o) {
 		//communication avec le server, renvoit un id idObj
-		
-		//local
-		sObj = new SharedObject();
+		try{
+			int idObj = this.server.create(o);		
+			this.server.initialize(idObj);	
+		}catch(RemoteException r){
+			r.printStackTrace();
+		}
+		sObj = new SharedObject(idObj,o);
 		this.localHMID.put(idObj,sObj);		
+		return sObj;
 	}
 	
 /////////////////////////////////////////////////////////////

@@ -2,8 +2,16 @@ import java.io.*;
 
 public class SharedObject implements Serializable, SharedObject_itf {
 	
-	private int sobjID;
+
+	//attribut lock
+
+	private int id;
+	public Object object;
 	
+	public SharedObject(int id,Object object){
+		this.iD = id;
+		this.object = object;
+	}
 	// invoked by the user program on the client node
 	public void lock_read() {
 	}
@@ -26,14 +34,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	public synchronized Object invalidate_writer() {
 	}
-	
-	//Getter
-	public int getID(){
-		return this.sobjID;
-	}
 
-	//Setter
-	public void setID(int i){
-		this.sobjID = i;
+	public int getID(){
+		return id;
 	}
+		
 }
