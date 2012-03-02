@@ -2,22 +2,24 @@ import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.*;
 import java.net.*;
+import java.util.HashMap;
 
 public class Client extends UnicastRemoteObject implements Client_itf {
 	
 	// Vérifier qu'on a le droit de rajouter un attribut. Je suis pas
 	// certain des consignes
 	
-	private HashMap<int,SharedObject_itf> localHMID;
-	private Server_itf server;
-	
+	private static HashMap<Integer,SharedObject> localHMID;
+	private static Server server;
+	private static Client client;	
+
 	public SharedObject getSharedObject(int id){
-		return this.get(id);
+		return this.localHMID.get(id);
 	}
 
 	public Client() throws RemoteException {
 		super();
-		this.localHMName = new HashMapName<String,SharedObject_itf>;
+		this.localHMID = new HashMap<Integer,SharedObject>();
 	}
 	
 
@@ -27,14 +29,15 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// initialization of the client layer
 	public static void init() {
-		this.localHMID = new HashMap<int,SharedObject_itf>();
+		this.localHMID = new HashMap<Integer,SharedObject>();
+		client = new Client();
 		String URL;
 		//Connexion
 		try{ 	
 			int port = 1234;
-			URL="//"+InetAdress.getLocalHost().getHostName()+":"+port+"/Server"; 
-			Server_itf server = (Server_itf) Naming.lookup(URL);
-			this.server = server;
+			URL="//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server"; 
+			Server serverRes =  Naming.lookup(URL);
+			server = serverRes;
 
 		}catch(Exception e){
 			System.out.println("Faild to connect to the Server");
@@ -46,40 +49,37 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	public static SharedObject lookup(String name){
 		try{
-			int idObj = this.server.lookup(name);
-			SharedObject sobj = newSharedObject(id,this.server.getShardObject(id).object);
+			int id = server.lookup(name);
+			SharedObject sobj = newSharedObject(id,server.getSharedObject(id).obj);
 			return sobj;
 
 		}catch(RemoteException r){
-		}
-					
+		}			
 	}		
 	
 	// binding in the name server
 	public static void register(String name, SharedObject_itf so) {
 		//Enregistrement local		
-		int objID = this.localHMID.get(so);
-
+		int objID =((SharedObject) so).getID();
 		try{
-			this.server.register(name,objID);
+			server.register(name,objID);
 		}catch(RemoteException r){
 			r.printStackTrace();
 		}
-
 	}
 
 	// creation of a shared object
 	public static SharedObject create(Object o) {
 		//communication avec le server, renvoit un id idObj
-		try{
-			
-			int idObj = this.server.create(o);		
-			this.server.initialize(idObj);	
+		try{			
+			int id = server.create(o);		
+			server.initialize(id,client);
+			SharedObject sObj = new SharedObject(id,o);
+			localHMID.put(id,sObj);	
+	 
 		}catch(RemoteException r){
 			r.printStackTrace();
-		}
-		sObj = new SharedObject(idObj,o);
-		this.localHMID.put(idObj,sObj);		
+		}		
 		return sObj;
 	}
 	

@@ -6,11 +6,11 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	//attribut lock
 
 	private int id;
-	public Object object;
+	public Object obj;
 	
 	public SharedObject(int id,Object object){
 		this.iD = id;
-		this.object = object;
+		this.obj = object;
 	}
 	// invoked by the user program on the client node
 	public void lock_read() {

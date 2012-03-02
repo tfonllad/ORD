@@ -2,11 +2,21 @@
 * 
 **/
 
-public class Server implements Serveur_itf{
+import java.util.HashMap;
+import java.rmi.registry.*;
+
+public class Server implements Server_itf{
 
 	private HashMap<String,ServerObject> hmName; 
-	private HashMap<int,ServerObject> hmID ;
-	
+	private HashMap<Integer,ServerObject> hmID ;
+	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
+
+	}
+
+        public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
+	}
+
+ 	
 	public SharedObject getSharedObject(int id) throws java.rmi.RemoteException{
 		ServerObject serverObject = this.hmID.get(id);
 		Client_itf client = serverObject.getClient();
@@ -24,30 +34,27 @@ public class Server implements Serveur_itf{
 		ServerObject sObj = this.hmName.get(name);
 		int resID = sObj.getID();
 		sObj.lockNI();
-		while(sObj.getLockState()==Lock.NI){
+		while(sObj.getLockState()!=Lock.NI){
 			try{
 				sObj.awaitNI();	
-			}catch(InterruptedException){
+			}catch(InterruptedException i){
 			}
 		}
 			//Everyone is now allowed to lookup;
-			sObj.signalNI();
+		sObj.signalNI();
 		sObj.unlockNI();
 		return resID;		
 	} 
 	
 	/** Method Register : register the name and ID of a ServerObject
-	* @param name : the name of the object. In fact name::ID because
-	* different object from different client are allowed to have the same
-	* name.
+	* @param name : the name of the object
 	* @param ID : the ID
 	* @return void
 	* @throws RemoteException
 	**/
 	public void register(String name,int id) throws java.rmi.RemoteException{
 			ShardObject sObj = this.hmID.get(id);
-			this.hmName.put(name,sObj);	
-		return
+			this.hmName.put(name,sObj);
 	}
 	
 	/** Method create : create Server Object, add it to hmID and return ID
@@ -56,10 +63,9 @@ public class Server implements Serveur_itf{
 	* @throws RemoteException
 	**/
 	public int create(Object o) throws java.rmi.RemoteException{
-			int objID =  o.hashcode();
-			ServerObject sObj = new ServerObject(objID,Lock.NI);
-
-			this.hmID.put(objID,sobj);}
+		int objID =  o.hashcode();
+		ServerObject sObj = new ServerObject(objID,Lock.NI);
+		this.hmID.put(objID,sobj);
 		return objID;
 	}
 	
@@ -80,16 +86,14 @@ public class Server implements Serveur_itf{
 		try{
 			Integer I = new Integer(args[0]);
 			port = I.intValue();
-			}catch(Exception e){
-				System.out.println("Please enter:Server<port>");
-				return
+		}catch(Exception e){
+			System.out.println("Please enter:Server<port>");
 		}
 		try{
 			port = 1234;
 			Registry registry = LocateRegistry.createRegistry(port);
 			Server_itf server = new Server();
-			URL =
-"//"+InetAdress.getLocalHost().getHostName()+":"+port+"/Server";
+			URL ="//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server";
 			Name.rebind(URL,server);
 		}catch(Exception e){
 			System.out.println("Fail to initialize Server");
