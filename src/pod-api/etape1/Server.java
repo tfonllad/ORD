@@ -1,7 +1,6 @@
 /**@version etape1
 * 
 **/
-
 import java.util.HashMap;
 import java.rmi.registry.*;
 import java.rmi.*;
@@ -21,7 +20,7 @@ public class Server implements Server_itf{
 	public SharedObject getSharedObject(int id) throws java.rmi.RemoteException{
 		ServerObject serverObject = this.hmID.get(id);
 		Client_itf client = serverObject.getClient();
-		return client.getSharedObject(id);
+		return client.getSharedObject(id); //faire un client.lookup -rmi
 	}
 		
 
@@ -84,18 +83,21 @@ public class Server implements Server_itf{
 	public static void main(String args[]){
 		int port;
 		String url;
+		Registry registry;
+		Integer I = new Integer(args[0]);
+		Server_itf server = new Server();
+		
 		try{
-			Integer I = new Integer(args[0]);
 			port = I.intValue();
 		}catch(Exception e){
 			System.out.println("Please enter:Server<port>");
 		}
+
 		try{
 			port = 1234;
-			Registry registry = LocateRegistry.createRegistry(port);
-			Server_itf server = new Server();
+			registry = LocateRegistry.createRegistry(port);
 			url ="//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server";
-			Name.rebind(url,server);
+			Naming.rebind(url,server);
 		}catch(Exception e){
 			System.out.println("Fail to initialize Server");
 			e.printStackTrace();

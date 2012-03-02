@@ -1,6 +1,6 @@
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
-import java.rmi.registry.*
+import java.rmi.registry.*;
 import java.net.*;
 import java.util.HashMap;
 
@@ -30,15 +30,15 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// initialization of the client layer
 	public static void init() {
 		localHMID = new HashMap<Integer,SharedObject>();
-		client = new Client();
+		Client client;	
+		int port;
 		String url;
+		
 		//Connexion
-		try{ 	
-			int port = 1234;
-			url="//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server"; 
-			Server serverRes =  Naming.lookup(url);
-			server = serverRes;
-
+		try{  	client = new Client();	
+			port = 1234;
+			url="Nom_Du_serveur_??"; 
+			server = (Server) Naming.lookup(url);
 		}catch(Exception e){
 			System.out.println("Faild to connect to the Server");
 			e.printStackTrace();
@@ -48,13 +48,18 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// lookup in the name server
 
 	public static SharedObject lookup(String name){
+		int id;
+		SharedObject so;
+		
 		try{
-			int id = server.lookup(name);
-			SharedObject sobj = new SharedObject(id,server.getSharedObject(id).obj);
-			return sobj;
+			id = server.lookup(name);
+			so = new SharedObject(id,server.getSharedObject(id).obj);
 
 		}catch(RemoteException r){
+		}finally{
+			so = null;
 		}			
+		return so;
 	}		
 	
 	// binding in the name server
@@ -71,15 +76,20 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// creation of a shared object
 	public static SharedObject create(Object o) {
 		//communication avec le server, renvoit un id idObj
+		int id;
+		SharedObject so;
+
 		try{			
-			int id = server.create(o);		
+			id = server.create(o);		
 			server.initialize(id,client);
-			SharedObject sObj = new SharedObject(id,o);
-			localHMID.put(id,sObj);	
-	 		return sObj;
-		}catch(RemoteException r){
+			so = new SharedObject(id,o);
+			localHMID.put(id,so);	
+	 	}catch(RemoteException r){
 			r.printStackTrace();
-		}		
+		}finally{
+			so=null;
+		}	
+		return so;		
 		
 	}
 	
@@ -89,14 +99,17 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// request a read lock from the server
 	public static Object lock_read(int id) {
+		return null;
 	}
 
 	// request a write lock from the server
 	public static Object lock_write (int id) {
+		return null;
 	}
 
 	// receive a lock reduction request from the server
 	public Object reduce_lock(int id) throws java.rmi.RemoteException {
+		return null;
 	}
 
 
@@ -107,5 +120,6 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// receive a writer invalidation request from the server
 	public Object invalidate_writer(int id) throws java.rmi.RemoteException {
+		return null;
 	}
 }
