@@ -4,7 +4,8 @@
 
 import java.util.HashMap;
 import java.rmi.registry.*;
-
+import java.rmi.*;
+import java.net.*;
 public class Server implements Server_itf{
 
 	private HashMap<String,ServerObject> hmName; 
@@ -33,16 +34,16 @@ public class Server implements Server_itf{
 	public int lookup(String name) throws java.rmi.RemoteException{
 		ServerObject sObj = this.hmName.get(name);
 		int resID = sObj.getID();
-		sObj.lockNI();
-		while(sObj.getLockState()!=Lock.NI){
+		sObj.lock();
+		while(!sObj.getLockState().equals(State.NI)){
 			try{
-				sObj.awaitNI();	
+				sObj.await(State.NI);	
 			}catch(InterruptedException i){
 			}
 		}
 			//Everyone is now allowed to lookup;
-		sObj.signalNI();
-		sObj.unlockNI();
+		sObj.signal(State.NI);
+		sObj.unlock();
 		return resID;		
 	} 
 	
@@ -53,8 +54,8 @@ public class Server implements Server_itf{
 	* @throws RemoteException
 	**/
 	public void register(String name,int id) throws java.rmi.RemoteException{
-			ShardObject sObj = this.hmID.get(id);
-			this.hmName.put(name,sObj);
+			ServerObject so = this.hmID.get(id);
+			this.hmName.put(name,so);
 	}
 	
 	/** Method create : create Server Object, add it to hmID and return ID
@@ -63,10 +64,10 @@ public class Server implements Server_itf{
 	* @throws RemoteException
 	**/
 	public int create(Object o) throws java.rmi.RemoteException{
-		int objID =  o.hashcode();
-		ServerObject sObj = new ServerObject(objID,Lock.NI);
-		this.hmID.put(objID,sobj);
-		return objID;
+		int id =  o.hashCode();
+		ServerObject so = new ServerObject(id);
+		this.hmID.put(id,so);
+		return id;
 	}
 	
 	/**Method initialize : add the client to the list of client disposing of
@@ -77,12 +78,12 @@ public class Server implements Server_itf{
 	**/
 	public void initialize(int id,Client_itf client) throws java.rmi.RemoteException{
 		this.hmID.get(id).addClient(client);
-		this.hmID.get(id).signalID();
+		this.hmID.get(id).signal(State.NI);
 	}
 
 	public static void main(String args[]){
 		int port;
-		String URL;
+		String url;
 		try{
 			Integer I = new Integer(args[0]);
 			port = I.intValue();
@@ -93,8 +94,8 @@ public class Server implements Server_itf{
 			port = 1234;
 			Registry registry = LocateRegistry.createRegistry(port);
 			Server_itf server = new Server();
-			URL ="//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server";
-			Name.rebind(URL,server);
+			url ="//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server";
+			Name.rebind(url,server);
 		}catch(Exception e){
 			System.out.println("Fail to initialize Server");
 			e.printStackTrace();

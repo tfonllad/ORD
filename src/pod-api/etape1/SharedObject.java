@@ -9,7 +9,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public Object obj;
 	
 	public SharedObject(int id,Object object){
-		this.iD = id;
+		this.id = id;
 		this.obj = object;
 	}
 	// invoked by the user program on the client node

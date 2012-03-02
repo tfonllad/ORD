@@ -5,7 +5,7 @@ import java.util.concurrent.locks.*;
 
 public class ServerObject{
 
-	private LockS lockState;
+	private State lockState;
 	private int id;
 	private ArrayList<Client_itf> clientList; // List of client who have up-to-date SharedObject 
 	private ReentrantLock lock;
@@ -18,9 +18,9 @@ public class ServerObject{
 
 	/** Constructor ServerObject
 	**/
-	public ServerObject(int id,int lock){
+	public ServerObject(int id){
 		this.id = id;	
-		this.lockState = lock;
+		this.lockState = State.NI;
 		this.lock = new ReentrantLock();
 		this.nI = this.lock.newCondition();
 		this.nL = this.lock.newCondition();
@@ -30,24 +30,24 @@ public class ServerObject{
 		this.rLT_WLC = this.lock.newCondition();
 	}
 	//Called when process can't meet requirement
-	public void await(LockS verrou) throws InterruptedException{
+	public void await(State verrou) throws InterruptedException{
 		switch(verrou){
-			case LockS.NI:
+			case NI:
 				this.nI.await();
 			break;
-			case LockS.NL:
+			case NL:
 				this.nL.await();
 			break;
-			case LockS.RLC:
+			case RLC:
 				this.rLC.await();
 			break;
-			case LockS.WLC:
+			case WLC:
 				this.wLC.await();
 			break;
-			case LockS.RLT:
+			case RLT:
 				this.rLT.await();
 			break;
-			case Locks.RLT_WLC:
+			case RLT_WLC:
 				this.rLT_WLC.await();
 			break;
 		}
@@ -58,31 +58,31 @@ public class ServerObject{
 	*certains rights.
 	*@return void
 	**/
-	public void signal(LockS verrou ){
+	public void signal(State verrou){
 		switch(verrou){
-			case LockS.NI:
+			case NI:
 				this.nI.signal();
-				this.lockState = LockS.NI; 
+				this.lockState = State.NI; 
 			break;
-			case LockS.NL:
+			case NL:
 				this.nL.signal();
-				this.lockState = LockS.NL;
+				this.lockState = State.NL;
 			break;
-			case LockS.RLC:
+			case RLC:
 				this.rLC.signal();
-				this.lockState = LockS.RLC;
+				this.lockState = State.RLC;
 			break;
-			case LockS.WLC:
+			case WLC:
 				this.wLC.signal();
-				this.lockState = LockS.WLC;
+				this.lockState = State.WLC;
 			break;
-			case LockS.RLT:
+			case RLT:
 				this.rLT.signal();
-				this.lockState = LockS.RLT;
+				this.lockState = State.RLT;
 			break;
-			case Locks.RLT_WLC:
+			case RLT_WLC:
 				this.rLT_WLC.signal();
-				this.lockState = LockS.RLT_WLC;
+				this.lockState = State.RLT_WLC;
 			break;
 		}
 	}
@@ -95,11 +95,8 @@ public class ServerObject{
 	public int getID(){
 		return this.id;
 	}
-	int getLockState(){
+	State getLockState(){
 		return this.lockState;
-	}
-	void setLockState(int i){
-		this.lockState = i;
 	}
 	public Client_itf getClient(){
 		return this.clientList.get(0);

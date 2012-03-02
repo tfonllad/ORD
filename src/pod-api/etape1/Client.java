@@ -1,6 +1,6 @@
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
-import java.rmi.registry.*;
+import java.rmi.registry.*
 import java.net.*;
 import java.util.HashMap;
 
@@ -13,13 +13,13 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	private static Server server;
 	private static Client client;	
 
-	public SharedObject getSharedObject(int id){
-		return this.localHMID.get(id);
+	public static SharedObject getSharedObject(int id){
+		return localHMID.get(id);
 	}
 
 	public Client() throws RemoteException {
 		super();
-		this.localHMID = new HashMap<Integer,SharedObject>();
+		localHMID = new HashMap<Integer,SharedObject>();
 	}
 	
 
@@ -29,14 +29,14 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// initialization of the client layer
 	public static void init() {
-		this.localHMID = new HashMap<Integer,SharedObject>();
+		localHMID = new HashMap<Integer,SharedObject>();
 		client = new Client();
-		String URL;
+		String url;
 		//Connexion
 		try{ 	
 			int port = 1234;
-			URL="//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server"; 
-			Server serverRes =  Naming.lookup(URL);
+			url="//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server"; 
+			Server serverRes =  Naming.lookup(url);
 			server = serverRes;
 
 		}catch(Exception e){
@@ -50,7 +50,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public static SharedObject lookup(String name){
 		try{
 			int id = server.lookup(name);
-			SharedObject sobj = newSharedObject(id,server.getSharedObject(id).obj);
+			SharedObject sobj = new SharedObject(id,server.getSharedObject(id).obj);
 			return sobj;
 
 		}catch(RemoteException r){
@@ -76,11 +76,11 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			server.initialize(id,client);
 			SharedObject sObj = new SharedObject(id,o);
 			localHMID.put(id,sObj);	
-	 
+	 		return sObj;
 		}catch(RemoteException r){
 			r.printStackTrace();
 		}		
-		return sObj;
+		
 	}
 	
 /////////////////////////////////////////////////////////////
