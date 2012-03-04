@@ -41,6 +41,12 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			port = 1099;
 			serverURL="????";  
 			server = (Server) Naming.lookup(url);
+			//getRegistry(host)
+			//enregistrer le client pour que le serveur fasse des
+			//appels dessus. Pour cela il faut identifier de manière
+			//unique le client, et donc que le serveur lui donne un
+			//ID unique. On peut envisager un compteur dans serveur,
+			//je sais pas is HashCode peut fonctionner
 			//idClient = server.getClientID(client);
 		}catch(Exception e){
 			System.out.println("Faild to connect to the Server");
