@@ -9,21 +9,28 @@ public class Server implements Server_itf{
 
 	private HashMap<String,ServerObject> hmName; 
 	private HashMap<Integer,ServerObject> hmID ;
-	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
 
+	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
+		return null;
 	}
 
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
+		return null;
 	}
 
- 	
-	public SharedObject getSharedObject(int id) throws java.rmi.RemoteException{
+ 	/**Method Shared Object : Called when Client1 lookup(obj) and the server
+ 	* has to take this obj from Client2
+	* @param id : id of the object
+	* @return SharedObject from client2
+	**/
+	// On pourrait aussi renvoyer l'objet directement ?
+
+	public Object getSharedObject(int id) throws java.rmi.RemoteException{
 		ServerObject serverObject = this.hmID.get(id);
-		Client_itf client = serverObject.getClient();
-		return client.getSharedObject(id); //faire un client.lookup -rmi
+		Client client = serverObject.getClient();
+		return client.getSharedObject(id).obj; 
 	}
 		
-
 
 	/**Method lookup : return the ID of object "name" 
 	* @param String
@@ -75,11 +82,32 @@ public class Server implements Server_itf{
 	* @param client : Client_itf identify the client
 	* @return void
 	**/
-	public void initialize(int id,Client_itf client) throws java.rmi.RemoteException{
-		this.hmID.get(id).addClient(client);
-		this.hmID.get(id).signal(State.NI);
-	}
+	/* Le problème dans cette méthode est de lier avec rmi le client au
+ * server de façon à ce qu'on puisse identifier le client et appeler des
+ * méthodes dessus. Donc faut faire du naming.lookup(String name) mais pour
+ * l'instant je ne sais pas comment ca marche exactement, "name" doit pas être
+ * donnée n'importe comment, le client doit bien s'enregistre quelque part avec
+ * la bonne adresse. Donc faut regarder le cours et la javadoc. Cela dit, ca
+ * C'est la même chose pour les locks*/
 
+	public void initialize(int id,Client_itf client,String name) throws java.rmi.RemoteException{
+		Client clientR; 
+		try{
+ 			clientR = (Client) Naming.lookup(name);
+		}catch(NotBoundException e){
+			System.out.println("server.initialize NBE");
+			e.printStackTrace();
+		}finally{
+			clientR = null;
+		}
+		this.hmID.get(id).addClient(clientR);
+		this.hmID.get(id).updateLock(State.NL);
+		this.hmID.get(id).signal(State.NI);
+		
+	}
+	//public int getClientID(Client client){
+	//	return client.hashCode();
+	//}
 	public static void main(String args[]){
 		int port;
 		String url;
@@ -94,7 +122,7 @@ public class Server implements Server_itf{
 		}
 
 		try{
-			port = 1234;
+			port = 1099;
 			registry = LocateRegistry.createRegistry(port);
 			url ="//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server";
 			Naming.rebind(url,server);

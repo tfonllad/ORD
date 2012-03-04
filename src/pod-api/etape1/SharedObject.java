@@ -26,13 +26,16 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	// callback invoked remotely by the server
 	public synchronized Object reduce_lock() {
+		return null;
 	}
 
 	// callback invoked remotely by the server
 	public synchronized void invalidate_reader() {
+
 	}
 
 	public synchronized Object invalidate_writer() {
+		return null;
 	}
 
 	public int getID(){

@@ -12,6 +12,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	private static HashMap<Integer,SharedObject> localHMID;
 	private static Server server;
 	private static Client client;	
+	//private static int idClient;
 
 	public static SharedObject getSharedObject(int id){
 		return localHMID.get(id);
@@ -32,13 +33,15 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		localHMID = new HashMap<Integer,SharedObject>();
 		Client client;	
 		int port;
-		String url;
-		
+		String serverURL;
+		//String clientURL;
+		//int idClient;
 		//Connexion
 		try{  	client = new Client();	
-			port = 1234;
-			url="Nom_Du_serveur_??"; 
+			port = 1099;
+			serverURL="????";  
 			server = (Server) Naming.lookup(url);
+			//idClient = server.getClientID(client);
 		}catch(Exception e){
 			System.out.println("Faild to connect to the Server");
 			e.printStackTrace();
@@ -53,7 +56,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		
 		try{
 			id = server.lookup(name);
-			so = new SharedObject(id,server.getSharedObject(id).obj);
+			so = new SharedObject(id,server.getSharedObject(id));
 
 		}catch(RemoteException r){
 		}finally{
@@ -81,7 +84,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 		try{			
 			id = server.create(o);		
-			server.initialize(id,client);
+			server.initialize(id,client,"Client");
 			so = new SharedObject(id,o);
 			localHMID.put(id,so);	
 	 	}catch(RemoteException r){

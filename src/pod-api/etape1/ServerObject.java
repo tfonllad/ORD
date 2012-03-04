@@ -30,6 +30,10 @@ public class ServerObject{
 		this.rLT_WLC = this.lock.newCondition();
 	}
 	//Called when process can't meet requirement
+	/** method await : block the process on one condition		
+	*@param : verrou, the condition
+	**/
+
 	public void await(State verrou) throws InterruptedException{
 		switch(verrou){
 			case NI:
@@ -53,43 +57,63 @@ public class ServerObject{
 		}
 	}
 	/**method signal is called once requirement are meet
-	*@param verrou lock to release waiting process. This process will gain
-	*acces to the object with a certain state (LockState), allowing him
-	*certains rights.
+	*@param verrou lock to release waiting process. If process get out of
+	*the loop it will call updateLock(verrou) to update the lock
 	*@return void
 	**/
 	public void signal(State verrou){
 		switch(verrou){
 			case NI:
 				this.nI.signal();
-				this.lockState = State.NI; 
 			break;
 			case NL:
 				this.nL.signal();
-				this.lockState = State.NL;
 			break;
 			case RLC:
 				this.rLC.signal();
-				this.lockState = State.RLC;
 			break;
 			case WLC:
 				this.wLC.signal();
-				this.lockState = State.WLC;
 			break;
 			case RLT:
 				this.rLT.signal();
-				this.lockState = State.RLT;
 			break;
 			case RLT_WLC:
 				this.rLT_WLC.signal();
+			break;
+		}
+	}
+	/** Methode updateLock is called after waiting process get out the await
+ 	* loop.
+	* @param verrou
+	* @return void
+	**/
+	public void updateLock(State verrou){
+		switch(verrou){
+			case NI:
+				this.lockState = State.NI; 
+			break;
+			case NL:
+				this.lockState = State.NL;
+			break;
+			case RLC:
+				this.lockState = State.RLC;
+			break;
+			case WLC:
+				this.lockState = State.WLC;
+			break;
+			case RLT:
+				this.lockState = State.RLT;
+			break;
+			case RLT_WLC:
 				this.lockState = State.RLT_WLC;
 			break;
 		}
 	}
-	public void lock(){
+	public synchronized void lock(){
 		this.lock.lock();
 	}
-	public void unlock(){
+	public synchronized void unlock(){
 		this.lock.unlock();
 	}
 	public int getID(){
@@ -98,7 +122,7 @@ public class ServerObject{
 	State getLockState(){
 		return this.lockState;
 	}
-	public Client_itf getClient(){
+	public Client getClient(){
 		return this.clientList.get(0);
 	}
 	public void addClient(Client_itf c){
