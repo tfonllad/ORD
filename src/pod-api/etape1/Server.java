@@ -9,7 +9,7 @@ public class Server implements Server_itf{
 
 	private HashMap<String,ServerObject> hmName; 
 	private HashMap<Integer,ServerObject> hmID ;
-
+	
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
 		return null;
 	}
@@ -40,8 +40,9 @@ public class Server implements Server_itf{
 	public int lookup(String name) throws java.rmi.RemoteException{
 		ServerObject sObj = this.hmName.get(name);
 		int resID = sObj.getID();
+
 		sObj.lock();
-		while(!sObj.getLockState().equals(State.NI)){
+		while(sObj.getLockState().equals(State.NI)){
 			try{
 				sObj.await(State.NI);	
 			}catch(InterruptedException i){
@@ -82,32 +83,13 @@ public class Server implements Server_itf{
 	* @param client : Client_itf identify the client
 	* @return void
 	**/
-	/* Le problème dans cette méthode est de lier avec rmi le client au
- * server de façon à ce qu'on puisse identifier le client et appeler des
- * méthodes dessus. Donc faut faire du naming.lookup(String name) mais pour
- * l'instant je ne sais pas comment ca marche exactement, "name" doit pas être
- * donnée n'importe comment, le client doit bien s'enregistre quelque part avec
- * la bonne adresse. Donc faut regarder le cours et la javadoc. Cela dit, ca
- * C'est la même chose pour les locks*/
-
-	public void initialize(int id,Client_itf client,String name) throws java.rmi.RemoteException{
-		Client clientR; 
-		try{
- 			clientR = (Client) Naming.lookup(name);
-		}catch(NotBoundException e){
-			System.out.println("server.initialize NBE");
-			e.printStackTrace();
-		}finally{
-			clientR = null;
-		}
+	public void initialize(int id,Client_itf client,String name) throws java.rmi.RemoteException{	
 		this.hmID.get(id).addClient(clientR);
 		this.hmID.get(id).updateLock(State.NL);
 		this.hmID.get(id).signal(State.NI);
 		
 	}
-	//public int getClientID(Client client){
-	//	return client.hashCode();
-	//}
+
 	public static void main(String args[]){
 		int port;
 		String url;
@@ -116,15 +98,10 @@ public class Server implements Server_itf{
 		Server_itf server = new Server();
 		
 		try{
-			port = I.intValue();
-		}catch(Exception e){
-			System.out.println("Please enter:Server<port>");
-		}
-
-		try{
 			port = 1099;
 			registry = LocateRegistry.createRegistry(port);
 			url ="//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server";
+			System.out.println(url);
 			Naming.rebind(url,server);
 		}catch(Exception e){
 			System.out.println("Fail to initialize Server");

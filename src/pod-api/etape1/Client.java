@@ -12,7 +12,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	private static HashMap<Integer,SharedObject> localHMID;
 	private static Server server;
 	private static Client client;	
-	//private static int idClient;
+	
 
 	public static SharedObject getSharedObject(int id){
 		return localHMID.get(id);
@@ -33,21 +33,15 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		localHMID = new HashMap<Integer,SharedObject>();
 		Client client;	
 		int port;
-		String serverURL;
-		//String clientURL;
-		//int idClient;
+		String host;
+		Registry registry;	
+		
 		//Connexion
-		try{  	client = new Client();	
-			port = 1099;
-			serverURL="????";  
-			server = (Server) Naming.lookup(url);
-			//getRegistry(host)
-			//enregistrer le client pour que le serveur fasse des
-			//appels dessus. Pour cela il faut identifier de manière
-			//unique le client, et donc que le serveur lui donne un
-			//ID unique. On peut envisager un compteur dans serveur,
-			//je sais pas is HashCode peut fonctionner
-			//idClient = server.getClientID(client);
+		try{  	
+			client = new Client();	
+			port = 1099; 
+			registry = LocateRegistry.getRegistry(host,port);
+			server = (Server) Naming.lookup("//"+host+":"+port+"/Server");
 		}catch(Exception e){
 			System.out.println("Faild to connect to the Server");
 			e.printStackTrace();
@@ -90,9 +84,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 		try{			
 			id = server.create(o);		
-			server.initialize(id,client,"Client");
+			server.initialize(id,client);
 			so = new SharedObject(id,o);
-			localHMID.put(id,so);	
+			localHMID.put(id,so);
+	
 	 	}catch(RemoteException r){
 			r.printStackTrace();
 		}finally{
