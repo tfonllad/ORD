@@ -10,24 +10,21 @@ public class ServerObject{
 	private ArrayList<Client_itf> clientList; // List of client who have up-to-date SharedObject 
 	private ReentrantLock lock;
 	private Condition nI;
-	private Condition nL;
-	private Condition rLC;	
-	private Condition wLC;
-	private Condition rLT;
-	private Condition rLT_WLC;
-
+	private Condition releaseLock; //either unlock or reduce_lock or invalidate
 	/** Constructor ServerObject
 	**/
+	public synchronized void releaseLock(){
+		this.releaseLock.signal();
+	}
+	public synchronized void takeLock(){
+		this.releaseLock.await();
+	}
 	public ServerObject(int id){
 		this.id = id;	
 		this.lockState = State.NI;
 		this.lock = new ReentrantLock();
 		this.nI = this.lock.newCondition();
-		this.nL = this.lock.newCondition();
-		this.rLC = this.lock.newCondition();
-		this.wLC = this.lock.newCondition();
-		this.rLT = this.lock.newCondition();
-		this.rLT_WLC = this.lock.newCondition();
+		this.releaseLock() = this.lock.newCondition();
 	}
 	//Called when process can't meet requirement
 	/** method await : block the process on one condition		
@@ -42,17 +39,11 @@ public class ServerObject{
 			case NL:
 				this.nL.await();
 			break;
-			case RLC:
-				this.rLC.await();
+			case RL:
+				this.rL.await();
 			break;
-			case WLC:
-				this.wLC.await();
-			break;
-			case RLT:
-				this.rLT.await();
-			break;
-			case RLT_WLC:
-				this.rLT_WLC.await();
+			case WL:
+				this.wL.await();
 			break;
 		}
 	}
@@ -66,21 +57,6 @@ public class ServerObject{
 			case NI:
 				this.nI.signal();
 			break;
-			case NL:
-				this.nL.signal();
-			break;
-			case RLC:
-				this.rLC.signal();
-			break;
-			case WLC:
-				this.wLC.signal();
-			break;
-			case RLT:
-				this.rLT.signal();
-			break;
-			case RLT_WLC:
-				this.rLT_WLC.signal();
-			break;
 		}
 	}
 	/** Methode updateLock is called after waiting process get out the await
@@ -92,21 +68,6 @@ public class ServerObject{
 		switch(verrou){
 			case NI:
 				this.lockState = State.NI; 
-			break;
-			case NL:
-				this.lockState = State.NL;
-			break;
-			case RLC:
-				this.lockState = State.RLC;
-			break;
-			case WLC:
-				this.lockState = State.WLC;
-			break;
-			case RLT:
-				this.lockState = State.RLT;
-			break;
-			case RLT_WLC:
-				this.lockState = State.RLT_WLC;
 			break;
 		}
 	}
@@ -122,10 +83,6 @@ public class ServerObject{
 	State getLockState(){
 		return this.lockState;
 	}
-	public Client getClient(){
-		return this.clientList.get(0);
-	}
-	public void addClient(Client_itf c){
-		this.clientList.add(c);
-	}
-}
+	public Object synchronized lock_read(Client_itf client){	
+	} 
+}	
