@@ -20,13 +20,12 @@ public class Server implements Server_itf{
 				so.awaitINI();
 			}catch(InterruptedException i){}
 		}
-
-		//TODO invalidation des écrivains. Si il y a un écrivain
 		o = this.hmID.get(id).reduce_lock();	
+		so.addReaderToList(id,client);
 		so.updateLock(State.RL);
-		//TODO ajouter l'éventuel redacteur invalidé dans la liste des
-		//lecteurs
+		
 		//TODO ajouter le client dans la liste des lecteur		
+		
 		return o;
 	}
 
