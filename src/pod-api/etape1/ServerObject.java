@@ -52,6 +52,7 @@ public class ServerObject{
 		// ecrivain
 		if(writer!=null){//a vérifier
 			o = writer.invalidate_writer(this.id);
+			writer = null;
 		}else{
 			for(Client cli : readerList()){
 				if(cli.getSharedObject(this.id).getLockState==State.RLT){
@@ -63,13 +64,17 @@ public class ServerObject{
 		}
 		return o;
 	}
-
+	public Object lock_read(Client_itf client){
+		
+	}
 	public Object reduce_lock(){
 		Client c;
 		Object o;
 		//On récup_re l'écrivant
 		if(writer!=null){
 			o = writer.reduce_lock(this.id);
+			this.clientList.add(this.writer);
+			writer = null;
 		}else{
 			for(Client cli : readerList()){
 				if(cli.getSharedObject(this.id).getLockState==State.RLT){
@@ -85,6 +90,7 @@ public class ServerObject{
 	public void invalidate_reader(){
 		for(Client cli : readerList()){
 			cli.invalidate_reader(this.id);		
+			this.clientList.remove(cli);
 		}
 	}	
 }	
