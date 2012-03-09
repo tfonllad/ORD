@@ -8,31 +8,13 @@ public class ServerObject{
 	private State lockState;
 	private int id;
 	private ArrayList<Client_itf> clientList; // List of client who have up-to-date SharedObject 
-	private ReentrantLock lock;
 	private Condition nI;
-	private Condition releaseLock; //either unlock or reduce_lock or invalidate
+	
 	/** Constructor ServerObject
 	**/
 	
 	public ServerObject(int id){
 		this.id = id;	
-		this.lockState = State.NI;
-		this.lock = new ReentrantLock();
-		this.nI = this.lock.newCondition();
-		this.releaseLock() = this.lock.newCondition();
-	}
-	public synchronized void awaitINI() throws InterruptedException{
-		this.nI.await();
-	}
-	public synchronized void signalINI(){
-		this.nI.signal();
-	}
-	public synchronized void releaseLock(){
-		this.releaseLock.signal();
-	}
-	public synchronized void takeLock(){
-		this.releaseLock.await();
-	}
 
 	/** Methode updateLock is called after waiting process get out the await
  	* loop.
@@ -55,20 +37,25 @@ public class ServerObject{
 			break;
 		}
 	}
-	public synchronized void lock(){
-		this.lock.lock();
-	}
-	public synchronized void unlock(){
-		this.lock.unlock();
-	}
+
 	public int getID(){
 		return this.id;
 	}
-	State getLockState(){
+	public synchronized State getLockState(){
 		return this.lockState;
+	
+	public Object invalidate_writer(){
+		Client c;
+		Object o;
+		// on récupère le client : on doit vérifier que c'est un
+		// ecrivain
+		o = c.invalidate_writer(this.id);
+		return o;
 	}
-	public Object synchronized lock_read(Client_itf client){	
-	}
-	public Object synchronized lock_write(Client_itf client){
-	} 
+	public Object reduce_lock(){
+		Client c;
+		Object o;
+		//On récup_re l'écrivant
+		o = c.reduce_lock(this.id);
+		return o;
 }	

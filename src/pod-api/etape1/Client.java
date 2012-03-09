@@ -106,32 +106,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// request a read lock from the server
 	public static Object lock_read(int id) {
 		so = hmID.get(id);
-		so.lock();
 		Object o;
-		while(so.isReadable()){
-			try{
-				so.takeLock();//c'est un await
-			}catch(InterruptedException i){}
-		}
-		switch so.getLockState(){
-
-			case NL :
-			o = server.lock_read(id,client);
-			so.updateLock(State.RLT);
-			break;
-			
-			case RLC:
-			o = server.lock_read(id,client);
-			so.updateLock(State.RLT);
-			break;
 		
-			case WLC:
-			o = server.lock_read(id,client);
-			so.updateLock(State RLT_WLC);
-			break;
-		}
-		so.unlock();
-		return o;
+		o = server.lock_read(id,client);	
 	}
 
 	// request a write lock from the server
@@ -139,55 +116,17 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		so = hmID.get(id);
 		so.lock();
 		Object o;
-		while(so.isWritable()){
-			try{
-				so.takeLock(); // c'est un await
-			}catch(InterruptedException i){
-			}
-		}
-		switch so.getLockState(){
-
-			case NL:
-			o = server.lock_write(id,client);
-			so.updateLock(State.WLT);
-			break;
-
-			case RLC:
-			o = server.lock_write(id,client);
-			so.updateLock(State.WLT);
-			break;
-
-			case WLC:
-			o = server.lock_write(id,client);	
-			break;
-		}
-
-		so.unlock();
-		return o;
+	
 	}
 
 	// receive a lock reduction request from the server
 	public Object reduce_lock(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
-		so.lock();
-		Object o = so.obj;
-		//les release sont des signal
-		switch so.getLockState(){
-			case RLT_WLC:
-			so.updateLock(State.RLT);
-			so.releaseLock();
-			break;
-			case WLC:
-			so.updateLock(State.RLC);
-			so.releaseLock();
-			break;
-			case WLT:
-			so.updateLock(State.RLC);
-			so.releaseLock();
-			break;
-		}
-		
-		so.unlock():
+		Object o;
+
+		o = so.reduce_lock();
+		//TODO mettre à jour l'object dans SO
+
 		return o;
 	}
 
@@ -214,25 +153,11 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// receive a writer invalidation request from the server
 	public Object invalidate_writer(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
-		Object o = so.obj;
-		// les release sont des signals
-		//updateLock on SharedObject
-		so.lock();
-		switch so.getLockState(){
-			case WLT :
-				so.updateLock(NL);
-				so.releaseLock(); 	
-			break;
-			case WLC:
-				so.updateLock(NL);
-				so.releaseLock();
-			break;
-			case RLT_WLC:
-				so.updateLock(NL);
-				so.releaseLock();
-			break;
-		}
-		so.unlock();
+		Object o;
+
+		so = so.invalidate_writer();
+		//TODO mettre a jour obj dans le SO
 		return o;
-	}
+	}	
 }
+
