@@ -2,7 +2,7 @@
 **/
 
 public enum State{
-	NI, NL, RLC, WLC, RLT, WLT, RLT_WLC;
+	NI, NL, RLC, WLC, RLT, WLT, RLT_WLC, WL, RL;
 }
 
 

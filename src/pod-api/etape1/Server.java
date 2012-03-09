@@ -14,14 +14,9 @@ public class Server implements Server_itf{
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
 		ServerObject so = this.hmID.get(id);
 		Object o;
+		o = so.lock_read(client);
 		// test si l'objet est initialisÃ©
-		while(so.getLockState()==State.NI){
-			try{
-				so.awaitINI();
-			}catch(InterruptedException i){}
-		}
-		o = this.hmID.get(id).reduce_lock();	
-		so.addReaderToList(id,client);
+		
 		so.updateLock(State.RL);
 		
 		//TODO ajouter le client dans la liste des lecteur		
@@ -44,6 +39,7 @@ public class Server implements Server_itf{
 
 	public Object getSharedObject(int id) throws java.rmi.RemoteException{
 		ServerObject serverObject = this.hmID.get(id);
+		//trouver le client qui possède l'objet à jour
 		Client client = serverObject.getClient();
 		return client.getSharedObject(id).obj; 
 	}
@@ -100,7 +96,7 @@ public class Server implements Server_itf{
 	* @param client : Client_itf identify the client
 	* @return void
 	**/
-	public void initialize(int id,Client_itf client,String name) throws java.rmi.RemoteException{	
+	public void initialize(int id,Client_itf client) throws java.rmi.RemoteException{	
 		this.hmID.get(id).addClient(clientR);
 		this.hmID.get(id).updateLock(State.NL);
 		this.hmID.get(id).signal(State.NI);

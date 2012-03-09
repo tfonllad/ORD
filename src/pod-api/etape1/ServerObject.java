@@ -44,6 +44,7 @@ public class ServerObject{
 	}
 	public synchronized State getLockState(){
 		return this.lockState;
+	}
 	
 	public Object invalidate_writer(){
 		Client c;
@@ -54,18 +55,21 @@ public class ServerObject{
 			o = writer.invalidate_writer(this.id);
 			writer = null;
 		}else{
-			for(Client cli : readerList()){
-				if(cli.getSharedObject(this.id).getLockState==State.RLT){
-					c = cli;
+			for(Client_itf cli : readerList){
+				if(((Client)cli).getSharedObject(this.id).getLockState()==State.RLT){
+					c = (Client)cli;
 					//break;
 				}			
 			}
-			o = cli.getObject();
+			o = c.getObject(this.id);
 		}
 		return o;
 	}
 	public Object lock_read(Client_itf client){
-		
+		Object o;
+		o = this.reduce_lock();	
+		readerList.add(client);
+		return o;
 	}
 	public Object reduce_lock(){
 		Client c;
@@ -73,24 +77,24 @@ public class ServerObject{
 		//On récup_re l'écrivant
 		if(writer!=null){
 			o = writer.reduce_lock(this.id);
-			this.clientList.add(this.writer);
+			this.readerList.add(this.writer);
 			writer = null;
 		}else{
-			for(Client cli : readerList()){
-				if(cli.getSharedObject(this.id).getLockState==State.RLT){
-					c = cli;
+			for(Client_itf cli : readerList){
+				if(((Client)cli).getSharedObject(this.id).getLockState()==State.RLT){
+					c = (Client) cli;
 					//break;
 				}			
 			}
-			o = cli.getObject();
+			o = c.getObject(this.id);
 		}
 	return o;	
 	}
 	
 	public void invalidate_reader(){
-		for(Client cli : readerList()){
+		for(Client_itf cli : readerList){
 			cli.invalidate_reader(this.id);		
-			this.clientList.remove(cli);
+			this.readerList.remove(cli);
 		}
 	}	
 }	

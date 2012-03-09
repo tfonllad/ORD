@@ -1,4 +1,6 @@
 import java.io.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class SharedObject implements Serializable, SharedObject_itf {
 	
@@ -8,6 +10,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	private ReentrantLock lock;
 	private Condition releaseLock;
 	private Client client;
+	private Condition nI;
 	
 	public SharedObject(int id,Object object){
 		this.id = id;
@@ -42,11 +45,10 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	}
 	public synchronized void signalINI(){
 		this.nI.signal();
-		}
 	}
+	
 	public synchronized void awaitINI() throws InterruptedException{
 		this.nI.await();
-		}
 	}
 	// invoked by the user program on the client node
 	public void lock_read() {
@@ -92,10 +94,10 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			this.lockState=State.RLC;
 		}
 		if(this.lockState==State.RLT_WLC){
-			this.lockState=RLT;
+			this.lockState=State.RLT;
 		}
-		if(this.lockState==WLC){
-			this.lockState==RLC;
+		if(this.lockState==State.WLC){
+			this.lockState=State.RLC;
 		}
 
 		return obj;
@@ -118,6 +120,10 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	public int getID(){
 		return id;
+	}
+
+	public State getLockState() {
+		return lockState;
 	}
 		
 }
