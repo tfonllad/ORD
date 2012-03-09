@@ -8,14 +8,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	private ReentrantLock lock;
 	private Condition releaseLock;
 	private Client client;
-
-	public synchronized void releaseLock(){
-		this.releaseLock.signal();
-	}
-	public synchronized void takeLock(){
-		this.releaseLock.await();
-	}
-
+	
 	public SharedObject(int id,Object object){
 		this.id = id;
 		this.obj = object;
@@ -25,13 +18,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.releaseLock = this.lock.newCondition();
 	}
 	
-	public synchronized boolean isWritable(){
-		return this.getLockState().equals(State.NI)||this.getLockState().equals(State.WLT)||this.getLockState().equals(State.RLT_WLC);
-	}
-	public synchronized boolean isReadable(){
-		return this.getLockState().equals(State.RLT)||this.getLockState().equals(State.WLT)||this.getLockState().equals(RLT_WLC)||this.getLockState().equals(State.NI)
-	}
-
 	public void updateLock(State verrou){
 		switch(verrou){
 			case NI:
@@ -58,46 +44,39 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.nI.signal();
 		}
 	}
-
 	public synchronized void awaitINI() throws InterruptedException{
 		this.nI.await();
 		}
 	}
-	
-	public synchronized void releaseLock(){
-		this.releaseLock.signal();
-	}
-	
-	public synchronized void takeLock() throws InterruptedException{
-		this.releaseLock.await();
-	}
-
 	// invoked by the user program on the client node
 	public void lock_read() {
 		// si on est en locket cached, inutile d'appeler le serveur.
 		
 		switch(this.lockState){
 			case RLC :
-			this.lock.lock();
+			//this.lock.lock();
 			this.updateLock(State.RLT);
 			//call server informer de la maj du lock
+			
 			break;
 
 			case WLC:
-			this.lock.lock();
+			//this.lock.lock();
 			this.updateLock(State.RLT_WLC);
 			//call server : informer de la maj.
 			break;
 			
-				
+			default:
+				client.lock_read(this.id);
+				this.lock.lock();// a vérifier
+				this.lockState=State.RLT;
+			break;					
 		}
-		
-		
 	}
 
 	// invoked by the user program on the client node
 	public void lock_write() {
-		this.client.lock_write(this.id);
+
 	}
 
 	// invoked by the user program on the client node
@@ -106,7 +85,20 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	// callback invoked remotely by the server
 	public synchronized Object reduce_lock() {
-		return null;
+		if(this.lockState==State.WLT){
+			while(this.lockState==State.WLT){
+				this.releaseLock.await();
+			}
+			this.lockState=State.RLC;
+		}
+		if(this.lockState==State.RLT_WLC){
+			this.lockState=RLT;
+		}
+		if(this.lockState==WLC){
+			this.lockState==RLC;
+		}
+
+		return obj;
 	}
 
 	// callback invoked remotely by the server
@@ -115,7 +107,13 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	}
 
 	public synchronized Object invalidate_writer() {
-		return null;
+		
+		while(this.lockState==State.WLT){
+			this.releaseLock.await();
+		}
+		this.lockState=State.NL;	
+		return obj;
+				
 	}
 
 	public int getID(){
