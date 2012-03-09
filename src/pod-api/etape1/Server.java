@@ -11,19 +11,52 @@ public class Server implements Server_itf{
 	private HashMap<Integer,ServerObject> hmID ;
 	
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
-		return null;
+		ServerObject so = this.hmID.get(id);
+		so.lock();
+		Object o;
+		// test si l'objet est initialisé
+		while(so.getLockState().equals(State.NI){
+			try{
+				so.await(State.NI);
+			}catch(InterruptedException i){}
+		}
+		//test si l'object est accessible en lecture
+		while(!so.isReadable()){
+			so.takeLock(); //attente bloquante
+		}
+		if(so.getLockState().equals(State.WL)){//test si exite(ecrivain)
+			try{
+				//Condition de lock sur les SharedObject
+				//invalidation  des writer
+			}catch(RemoteException r){}
+		}else{
+			try{
+				//Condition de lock sur les SharedObject
+				//lock sur le shared object
+				o = so.getReader().getOject(id);
+			}
+		}
+		// les sharedObject sont mis à jours
+		//so.addReader(client);  a implanter.
+		so.updateLock(State.RL);
+		so.releaseLock();
+		so.unlock();
+			
+		return o;
 	}
 
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
+		//meme shéma qu'au dessus : attente bloquant sur initialisation,
+		//attente bloquante sur le droit d'écriture
+		//après avoir le droit d'écriture, aller invalider
 		return null;
 	}
 
- 	/**Method Shared Object : Called when Client1 lookup(obj) and the server
+ 	/** Method Shared Object : Called when Client1 lookup(obj) and the server
  	* has to take this obj from Client2
 	* @param id : id of the object
 	* @return SharedObject from client2
 	**/
-	// On pourrait aussi renvoyer l'objet directement ?
 
 	public Object getSharedObject(int id) throws java.rmi.RemoteException{
 		ServerObject serverObject = this.hmID.get(id);
