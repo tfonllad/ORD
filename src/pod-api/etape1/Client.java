@@ -125,6 +125,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		Object o;
 
 		o = so.reduce_lock();
+		
 		//TODO mettre à jour l'object dans SO
 
 		return o;
@@ -134,19 +135,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// receive a reader invalidation request from the server
 	public void invalidate_reader(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
-		so.lock();
-		// les release sont des signals
-		switch so.getLockState(){
-			case RLC:
-			so.updateLock(State.NL);
-			so.releaseLock();
-			break;
-			case RLT:
-			so.updateLock(State.NL);
-			so.releaseLock();
-			break;
-		}
-		so.unlock();
+		
 	}
 
 
