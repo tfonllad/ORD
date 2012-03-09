@@ -7,7 +7,8 @@ public class ServerObject{
 
 	private State lockState;
 	private int id;
-	private ArrayList<Client_itf> clientList; // List of client who have up-to-date SharedObject 
+	private ArrayList<Client_itf> readerList; //contains no writers 
+	private Client_itf writer;
 	private Condition nI;
 	
 	/** Constructor ServerObject
@@ -15,7 +16,7 @@ public class ServerObject{
 	
 	public ServerObject(int id){
 		this.id = id;	
-
+	}
 	/** Methode updateLock is called after waiting process get out the await
  	* loop.
 	* @param verrou
@@ -49,13 +50,41 @@ public class ServerObject{
 		Object o;
 		// on récupère le client : on doit vérifier que c'est un
 		// ecrivain
-		o = c.invalidate_writer(this.id);
+		if(writer!=null){//a vérifier
+			o = writer.invalidate_writer(this.id);
+		}else{
+			for(Client cli : readerList()){
+				if(cli.getSharedObject(this.id).getLockState==State.RLT){
+					c = cli;
+					//break;
+				}			
+			}
+			o = cli.getObject();
+		}
 		return o;
 	}
+
 	public Object reduce_lock(){
 		Client c;
 		Object o;
 		//On récup_re l'écrivant
-		o = c.reduce_lock(this.id);
-		return o;
+		if(writer!=null){
+			o = writer.reduce_lock(this.id);
+		}else{
+			for(Client cli : readerList()){
+				if(cli.getSharedObject(this.id).getLockState==State.RLT){
+					c = cli;
+					//break;
+				}			
+			}
+			o = cli.getObject();
+		}
+	return o;	
+	}
+	
+	public void invalidate_reader(){
+		for(Client cli : readerList()){
+			cli.invalidate_reader(this.id);		
+		}
+	}	
 }	

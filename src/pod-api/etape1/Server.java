@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.rmi.registry.*;
 import java.rmi.*;
 import java.net.*;
+
 public class Server implements Server_itf{
 
 	private HashMap<String,ServerObject> hmName; 
