@@ -13,12 +13,7 @@ public class ServerObject{
 	private Condition releaseLock; //either unlock or reduce_lock or invalidate
 	/** Constructor ServerObject
 	**/
-	public synchronized void releaseLock(){
-		this.releaseLock.signal();
-	}
-	public synchronized void takeLock(){
-		this.releaseLock.await();
-	}
+	
 	public ServerObject(int id){
 		this.id = id;	
 		this.lockState = State.NI;
@@ -26,39 +21,19 @@ public class ServerObject{
 		this.nI = this.lock.newCondition();
 		this.releaseLock() = this.lock.newCondition();
 	}
-	//Called when process can't meet requirement
-	/** method await : block the process on one condition		
-	*@param : verrou, the condition
-	**/
+	public synchronized void awaitINI() throws InterruptedException{
+		this.nI.await();
+	}
+	public synchronized void signalINI(){
+		this.nI.signal();
+	}
+	public synchronized void releaseLock(){
+		this.releaseLock.signal();
+	}
+	public synchronized void takeLock(){
+		this.releaseLock.await();
+	}
 
-	public void await(State verrou) throws InterruptedException{
-		switch(verrou){
-			case NI:
-				this.nI.await();
-			break;
-			case NL:
-				this.nL.await();
-			break;
-			case RL:
-				this.rL.await();
-			break;
-			case WL:
-				this.wL.await();
-			break;
-		}
-	}
-	/**method signal is called once requirement are meet
-	*@param verrou lock to release waiting process. If process get out of
-	*the loop it will call updateLock(verrou) to update the lock
-	*@return void
-	**/
-	public void signal(State verrou){
-		switch(verrou){
-			case NI:
-				this.nI.signal();
-			break;
-		}
-	}
 	/** Methode updateLock is called after waiting process get out the await
  	* loop.
 	* @param verrou
@@ -67,7 +42,16 @@ public class ServerObject{
 	public void updateLock(State verrou){
 		switch(verrou){
 			case NI:
-				this.lockState = State.NI; 
+				this.lockState = State.NI;
+			break;
+			case NL:
+				this.lockState = State.NL;
+			break;
+			case RL:
+				this.lockState = State.RL;
+			break;
+			case WL:
+				this.lockState = State.WL;
 			break;
 		}
 	}
@@ -84,5 +68,7 @@ public class ServerObject{
 		return this.lockState;
 	}
 	public Object synchronized lock_read(Client_itf client){	
+	}
+	public Object synchronized lock_write(Client_itf client){
 	} 
 }	

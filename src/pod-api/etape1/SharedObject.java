@@ -2,14 +2,12 @@ import java.io.*;
 
 public class SharedObject implements Serializable, SharedObject_itf {
 	
-
-	//attribut lock
-
 	private int id;
 	public Object obj;
 	private State lockState;
 	private ReentrantLock lock;
 	private Condition releaseLock;
+	private Client client;
 
 	public synchronized void releaseLock(){
 		this.releaseLock.signal();
@@ -56,29 +54,50 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			break;
 		}
 	}
-	public void signal(State verrou){
-		switch(verrou){
-			case NI:
-				this.nI.signal();
-			break;
+	public synchronized void signalINI(){
+		this.nI.signal();
+		}
+	}
 
+	public synchronized void awaitINI() throws InterruptedException{
+		this.nI.await();
 		}
 	}
-	public void await(State verrou) throws InterruptedException{
-		switch(verrou){
-			case NI:
-				this.nI.await();
-			break;
-		}
+	
+	public synchronized void releaseLock(){
+		this.releaseLock.signal();
 	}
+	
+	public synchronized void takeLock() throws InterruptedException{
+		this.releaseLock.await();
+	}
+
 	// invoked by the user program on the client node
 	public void lock_read() {
-		//appel de 
+		// si on est en locket cached, inutile d'appeler le serveur.
+		
+		switch(this.lockState){
+			case RLC :
+			this.lock.lock();
+			this.updateLock(State.RLT);
+			//call server informer de la maj du lock
+			break;
+
+			case WLC:
+			this.lock.lock();
+			this.updateLock(State.RLT_WLC);
+			//call server : informer de la maj.
+			break;
+			
+				
+		}
+		
+		
 	}
 
 	// invoked by the user program on the client node
 	public void lock_write() {
-		//appel d
+		this.client.lock_write(this.id);
 	}
 
 	// invoked by the user program on the client node
@@ -103,4 +122,4 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		return id;
 	}
 		
-
+}
