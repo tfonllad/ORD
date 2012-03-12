@@ -5,28 +5,41 @@ import java.util.HashMap;
 import java.rmi.registry.*;
 import java.rmi.*;
 import java.net.*;
+
 public class Server implements Server_itf{
 
 	private HashMap<String,ServerObject> hmName; 
 	private HashMap<Integer,ServerObject> hmID ;
 	
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
-		return null;
+		ServerObject so = this.hmID.get(id);
+		Object o;
+		o = so.lock_read(client);
+		// test si l'objet est initialisé
+		
+		so.updateLock(State.RL);
+		
+		//TODO ajouter le client dans la liste des lecteur		
+		
+		return o;
 	}
 
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
+		//meme shéma qu'au dessus : attente bloquant sur initialisation,
+		//e bloquante sur le droit d'écriture
+		//après avoir le droit d'écriture, aller invalider
 		return null;
 	}
 
- 	/**Method Shared Object : Called when Client1 lookup(obj) and the server
+ 	/** Method Shared Object : Called when Client1 lookup(obj) and the server
  	* has to take this obj from Client2
 	* @param id : id of the object
 	* @return SharedObject from client2
 	**/
-	// On pourrait aussi renvoyer l'objet directement ?
 
 	public Object getSharedObject(int id) throws java.rmi.RemoteException{
 		ServerObject serverObject = this.hmID.get(id);
+		//trouver le client qui poss�de l'objet � jour
 		Client client = serverObject.getClient();
 		return client.getSharedObject(id).obj; 
 	}
@@ -83,7 +96,7 @@ public class Server implements Server_itf{
 	* @param client : Client_itf identify the client
 	* @return void
 	**/
-	public void initialize(int id,Client_itf client,String name) throws java.rmi.RemoteException{	
+	public void initialize(int id,Client_itf client) throws java.rmi.RemoteException{	
 		this.hmID.get(id).addClient(clientR);
 		this.hmID.get(id).updateLock(State.NL);
 		this.hmID.get(id).signal(State.NI);

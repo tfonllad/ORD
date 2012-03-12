@@ -13,7 +13,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	private static Server server;
 	private static Client client;	
 	
-
+	public static Object getObject(int id){
+		return localHMID.get(id).obj;
+	}
 	public static SharedObject getSharedObject(int id){
 		return localHMID.get(id);
 	}
@@ -92,7 +94,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			r.printStackTrace();
 		}finally{
 			so=null;
-		}	
+	
 		return so;		
 		
 	}
@@ -103,27 +105,48 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// request a read lock from the server
 	public static Object lock_read(int id) {
-		return null;
+		so = hmID.get(id);
+		Object o;
+		
+		o = server.lock_read(id,client);	
 	}
 
 	// request a write lock from the server
 	public static Object lock_write (int id) {
-		return null;
+		so = hmID.get(id);
+		so.lock();
+		Object o;
+	
 	}
 
 	// receive a lock reduction request from the server
 	public Object reduce_lock(int id) throws java.rmi.RemoteException {
-		return null;
+		SharedObject so = hmID.get(id);
+		Object o;
+
+		o = so.reduce_lock();
+		
+		//TODO mettre à jour l'object dans SO
+
+		return o;
 	}
 
 
 	// receive a reader invalidation request from the server
 	public void invalidate_reader(int id) throws java.rmi.RemoteException {
+		SharedObject so = hmID.get(id);
+		
 	}
 
 
 	// receive a writer invalidation request from the server
 	public Object invalidate_writer(int id) throws java.rmi.RemoteException {
-		return null;
-	}
+		SharedObject so = hmID.get(id);
+		Object o;
+
+		so = so.invalidate_writer();
+		//TODO mettre a jour obj dans le SO
+		return o;
+	}	
 }
+
