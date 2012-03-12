@@ -40,21 +40,25 @@ public class Server implements Server_itf{
 	**/
 
 	public Object getObject(int id) throws java.rmi.RemoteException{
-		ServerObject serverObject = this.hmID.get(id);
-		Object o = serverObject.obj;
-		return o; 
+		return this.hmID.get(id).obj; 
 	}
 		
 
-	/**Method lookup : return the ID of object "name" 
+	/**Method lookup : return the ID of object "name" if it was registered, otherwise return null
 	* @param String
 	* @return int
 	* @throws RemoteException
 	**/
 	public int lookup(String name) throws java.rmi.RemoteException{
+		int resID;
 		ServerObject sObj = this.hmName.get(name);
-		int resID = sObj.getID();
-
+		if (sObj==null){
+			//valeur de id caractéristique de l'abscence de l'objet.
+			resID=0;
+		}
+		else{
+			resID = sObj.getID();
+		}
 		sObj.lock();
 		while(!sObj.isINI()){
 			try{
@@ -62,7 +66,6 @@ public class Server implements Server_itf{
 			}catch(InterruptedException i){
 			}
 		}
-			//Everyone is now allowed to lookup;
 		sObj.signalINI();
 		sObj.unlock();
 		return resID;		
