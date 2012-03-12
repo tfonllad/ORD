@@ -7,11 +7,11 @@ import java.util.HashMap;
 public class Client extends UnicastRemoteObject implements Client_itf {
 	
 	// Vérifier qu'on a le droit de rajouter un attribut. Je suis pas
-	// certain des consignes
+	// certain des consignes -> OK tant qu'ils sont en privé et qu'on change pas l'interface
 	
 	private static HashMap<Integer,SharedObject> localHMID;
-	private static Server server;
-	private static Client client;	
+	private static Server_itf server;
+	private static Client_itf client;	
 	
 	public static Object getObject(int id){
 		return localHMID.get(id).obj;
@@ -22,6 +22,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	public Client() throws RemoteException {
 		super();
+		//HashMap déjà initialisée dans le init ?
 		localHMID = new HashMap<Integer,SharedObject>();
 	}
 	
@@ -30,22 +31,16 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 //         Interface to be used by applications
 ///////////////////////////////////////////////////
 
-	// initialization of the client layer
+	// initialization of the client layer -> OK
 	public static void init() {
 		localHMID = new HashMap<Integer,SharedObject>();
-		Client client;	
-		int port;
-		String host;
-		Registry registry;	
-		
 		//Connexion
 		try{  	
 			client = new Client();	
-			port = 1099; 
-			registry = LocateRegistry.getRegistry(host,port);
-			server = (Server) Naming.lookup("//"+host+":"+port+"/Server");
+			int port = 1099; 
+			server = (Server_itf) Naming.lookup("//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server");
 		}catch(Exception e){
-			System.out.println("Faild to connect to the Server");
+			System.out.println("Failed to connect to the Server");
 			e.printStackTrace();
 		}
 	}
@@ -58,7 +53,8 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		
 		try{
 			id = server.lookup(name);
-			so = new SharedObject(id,server.getSharedObject(id));
+			so = new SharedObject(id,null);
+			localHMID.put(id,so);
 
 		}catch(RemoteException r){
 		}finally{

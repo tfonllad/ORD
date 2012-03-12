@@ -39,22 +39,29 @@ public class Server implements Server_itf{
 
 	public Object getSharedObject(int id) throws java.rmi.RemoteException{
 		ServerObject serverObject = this.hmID.get(id);
-		//trouver le client qui possède l'objet à jour
+		//trouver le client qui possï¿½de l'objet ï¿½ jour
 		Client client = serverObject.getClient();
 		return client.getSharedObject(id).obj; 
 	}
 		
 
-	/**Method lookup : return the ID of object "name" 
+	/**Method lookup : return the ID of object "name" if it was registered, otherwise return null
 	* @param String
 	* @return int
 	* @throws RemoteException
 	**/
 	public int lookup(String name) throws java.rmi.RemoteException{
+		int resID;
 		ServerObject sObj = this.hmName.get(name);
-		int resID = sObj.getID();
+		if (sObj==null){
+			//valeur de id caractÃ©ristique de l'abscence de l'objet.
+			resID=0;
+		}
+		else{
+			resID = sObj.getID();
+		}
 
-		sObj.lock();
+		/*sObj.lock();
 		while(sObj.getLockState().equals(State.NI)){
 			try{
 				sObj.await(State.NI);	
@@ -63,7 +70,7 @@ public class Server implements Server_itf{
 		}
 			//Everyone is now allowed to lookup;
 		sObj.signal(State.NI);
-		sObj.unlock();
+		sObj.unlock();*/
 		return resID;		
 	} 
 	
