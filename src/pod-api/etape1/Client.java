@@ -58,8 +58,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		
 		try{
 			id = server.lookup(name);
-			so = new SharedObject(id,server.getSharedObject(id));
-
+			if(localhmID.contains(id)){
+			 so = localhmID.get(id);
+			}else{
+				so = new SharedObject(id,server.getObj(id),client);	
 		}catch(RemoteException r){
 		}finally{
 			so = null;
@@ -107,15 +109,17 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public static Object lock_read(int id) {
 		so = hmID.get(id);
 		Object o;
-		
-		o = server.lock_read(id,client);	
+		o = server.lock_read(id,client);
+		return o;	
 	}
 
-	// request a write lock from the server
-	public static Object lock_write (int id) {
-		so = hmID.get(id);
+	// request a write )
+	public static Obhect lock_write(int id) {
 		so.lock();
+		so = hmID.get(id);
 		Object o;
+		o = server.lock_write(id,client)
+		so.unlockLock();
 	
 	}
 
@@ -123,11 +127,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public Object reduce_lock(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
 		Object o;
-
-		o = so.reduce_lock();
-		
-		//TODO mettre à jour l'object dans SO
-
+		so.lock();
+		o = so.reduce_lock();	//objet inchangé	
+		so.unlockLock();
 		return o;
 	}
 
@@ -135,7 +137,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// receive a reader invalidation request from the server
 	public void invalidate_reader(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
-		
+		so.lock();
+		so.invalidate_reader();
+		so.unlockLock();
 	}
 
 
@@ -143,9 +147,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public Object invalidate_writer(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
 		Object o;
-
+		so.lock();
 		so = so.invalidate_writer();
-		//TODO mettre a jour obj dans le SO
+		so.unlockLock();
+
 		return o;
 	}	
 }

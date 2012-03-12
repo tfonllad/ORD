@@ -9,18 +9,15 @@ import java.net.*;
 public class Server implements Server_itf{
 
 	private HashMap<String,ServerObject> hmName; 
-	private HashMap<Integer,ServerObject> hmID ;
-	
+	private HashMap<Integer,ServerObject> hmID;
+	private int cpt; 				//generation of id
+
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
 		ServerObject so = this.hmID.get(id);
 		Object o;
-		o = so.lock_read(client);
-		// test si l'objet est initialisé
-		
-		so.updateLock(State.RL);
-		
-		//TODO ajouter le client dans la liste des lecteur		
-		
+		so.lock();
+		o = so.lock_read(client);		
+		so.unlock();
 		return o;
 	}
 
@@ -28,7 +25,12 @@ public class Server implements Server_itf{
 		//meme shéma qu'au dessus : attente bloquant sur initialisation,
 		//e bloquante sur le droit d'écriture
 		//après avoir le droit d'écriture, aller invalider
-		return null;
+		ServerObject so = this.hmID.getID();
+		Object o;
+		so.lock();
+		o = so.lock_write(client);
+		so.lock();
+		return o;
 	}
 
  	/** Method Shared Object : Called when Client1 lookup(obj) and the server
@@ -37,11 +39,10 @@ public class Server implements Server_itf{
 	* @return SharedObject from client2
 	**/
 
-	public Object getSharedObject(int id) throws java.rmi.RemoteException{
+	public Object getObject(int id) throws java.rmi.RemoteException{
 		ServerObject serverObject = this.hmID.get(id);
-		//trouver le client qui poss�de l'objet � jour
-		Client client = serverObject.getClient();
-		return client.getSharedObject(id).obj; 
+		Object o = serverObject.obj;
+		return o; 
 	}
 		
 
@@ -55,14 +56,14 @@ public class Server implements Server_itf{
 		int resID = sObj.getID();
 
 		sObj.lock();
-		while(sObj.getLockState().equals(State.NI)){
+		while(!sObj.isINI()){
 			try{
-				sObj.await(State.NI);	
+				sObj.awaitINI();	
 			}catch(InterruptedException i){
 			}
 		}
 			//Everyone is now allowed to lookup;
-		sObj.signal(State.NI);
+		sObj.signalINI();
 		sObj.unlock();
 		return resID;		
 	} 
@@ -76,6 +77,8 @@ public class Server implements Server_itf{
 	public void register(String name,int id) throws java.rmi.RemoteException{
 			ServerObject so = this.hmID.get(id);
 			this.hmName.put(name,so);
+			this.hmID.get(id).setINI();
+			this.hmID.get(id).signalINI;
 	}
 	
 	/** Method create : create Server Object, add it to hmID and return ID
@@ -84,8 +87,9 @@ public class Server implements Server_itf{
 	* @throws RemoteException
 	**/
 	public int create(Object o) throws java.rmi.RemoteException{
-		int id =  o.hashCode();
-		ServerObject so = new ServerObject(id);
+		int id =  cpt;
+		cpt = cpt+1;
+		ServerObject so = new ServerObject(id,o);
 		this.hmID.put(id,so);
 		return id;
 	}
@@ -98,15 +102,13 @@ public class Server implements Server_itf{
 	**/
 	public void initialize(int id,Client_itf client) throws java.rmi.RemoteException{	
 		this.hmID.get(id).addClient(clientR);
-		this.hmID.get(id).updateLock(State.NL);
-		this.hmID.get(id).signal(State.NI);
-		
 	}
 
 	public static void main(String args[]){
 		int port;
 		String url;
 		Registry registry;
+		cpt = 0;
 		Integer I = new Integer(args[0]);
 		Server_itf server = new Server();
 		

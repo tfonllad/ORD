@@ -5,17 +5,39 @@ import java.util.concurrent.locks.*;
 
 public class ServerObject{
 
-	private State lockState;
+	//identification	
 	private int id;
-	private ArrayList<Client_itf> readerList; //contains no writers 
-	private Client_itf writer;
-	private Condition nI;
+	private ArrayList<Client_itf> readerList; 
+	private Client_itf writer;	
+	public Object obj;		
+	
+	//State
+	private State lockState;
+	public enum State{
+		NL;
+		RL;
+		WL;	
+	}
+	
+	//Consistency
+	private Condition nI;	
+	private ReentrantLock() lock;
+
 	
 	/** Constructor ServerObject
+	*@param id : the unique id.
+	*@param o : cached object. Used for lookup and reader without writer
+	*invalidation
 	**/
-	
-	public ServerObject(int id){
+	public ServerObject(int id,Object o){
 		this.id = id;	
+		this.obj = o;
+	}
+	public synchronized void lock(){
+		this.lock.lock();
+	}
+	public synchronized void unlock(){
+		this.lock.unlock();
 	}
 	/** Methode updateLock is called after waiting process get out the await
  	* loop.
@@ -25,16 +47,16 @@ public class ServerObject{
 	public void updateLock(State verrou){
 		switch(verrou){
 			case NI:
-				this.lockState = State.NI;
+				this.lockState = NI;
 			break;
 			case NL:
-				this.lockState = State.NL;
+				this.lockState = NL;
 			break;
 			case RL:
-				this.lockState = State.RL;
+				this.lockState = RL;
 			break;
 			case WL:
-				this.lockState = State.WL;
+				this.lockState = WL;
 			break;
 		}
 	}
@@ -42,59 +64,66 @@ public class ServerObject{
 	public int getID(){
 		return this.id;
 	}
-	public synchronized State getLockState(){
-		return this.lockState;
-	}
-	
+
+	/** method invalidate_write: used to get the last up-to-date object
+	 *from a writer once he unlocked it. If they are no current writer, return the
+ 	 *cached object. Also set writer to null;
+	 *@return obj 
+	 **/
 	public Object invalidate_writer(){
 		Client c;
-		Object o;
-		// on récupère le client : on doit vérifier que c'est un
-		// ecrivain
-		if(writer!=null){//a vérifier
-			o = writer.invalidate_writer(this.id);
-			writer = null;
-		}else{
-			for(Client_itf cli : readerList){
-				if(((Client)cli).getSharedObject(this.id).getLockState()==State.RLT){
-					c = (Client)cli;
-					//break;
-				}			
-			}
-			o = c.getObject(this.id);
-		}
-		return o;
-	}
-	public Object lock_read(Client_itf client){
-		Object o;
-		o = this.reduce_lock();	
-		readerList.add(client);
-		return o;
-	}
-	public Object reduce_lock(){
-		Client c;
-		Object o;
-		//On récup_re l'écrivant
 		if(writer!=null){
-			o = writer.reduce_lock(this.id);
-			this.readerList.add(this.writer);
+			obj = writer.invalidate_writer(this.id);
 			writer = null;
-		}else{
-			for(Client_itf cli : readerList){
-				if(((Client)cli).getSharedObject(this.id).getLockState()==State.RLT){
-					c = (Client) cli;
-					//break;
-				}			
-			}
-			o = c.getObject(this.id);
 		}
-	return o;	
+		return obj;
 	}
 	
+	/** Method invalidate_reader : used to wait for reader to unlock.
+	**/
 	public void invalidate_reader(){
 		for(Client_itf cli : readerList){
 			cli.invalidate_reader(this.id);		
 			this.readerList.remove(cli);
 		}
 	}	
-}	
+	/**Method reduce_lock : similar to invalidate_writer except the writer
+	 * becomes a reader
+         *@return o : up-to-date object
+	**/
+	public Object reduce_lock(){
+		Client c;
+		if(writer!=null){
+			obj = writer.reduce_lock(this.id);
+			this.readerList.add(this.writer);
+			writer = null;
+		}
+	return obj;	
+	}
+	
+	/**Method lock_read : called by client to get lock on the object.The
+ 	* method call reduce_lock on the writer if not null
+	* @return o : up-to-date object
+	**/
+	public Object lock_read(Client c){
+		while(lockState==WL){
+			obj = this.reduce_lock();
+		}
+		lockState=RL;
+		read.signal();		//réveil en chaîne
+		return obj;
+	}	
+	/**Method lock_writer : similar to lock_write, invalidate both writer
+ 	* and readers.
+	* @return obj : up-to-date object
+	**/
+	public Object lock_write(Client c){
+		while(lockState==WL|this.readerList.size()!=0){
+				obj = this.invalidate_writer();	
+				this.invalidate_reader();
+		}
+		this.lockState = WL;
+		writer = c;
+		return obj;
+	}
+}
