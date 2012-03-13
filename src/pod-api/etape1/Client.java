@@ -3,6 +3,9 @@ import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.*;
 import java.net.*;
 import java.util.HashMap;
+//import org.apache.log4j.Logger;
+//import org.apache.log4j.FileAppender;
+//import org.apache.log4j.XMLLayout;
 
 public class Client extends UnicastRemoteObject implements Client_itf {
 	
@@ -12,7 +15,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	private static HashMap<Integer,SharedObject> hmID;
 	private static Server_itf server;
 	private static Client_itf client;	
-	
+//	private static final Logger logger = Logger.getLogger(Client.class);	
 	public Client() throws RemoteException {
 		super();
 	}
@@ -32,8 +35,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			client = new Client();	
 			int port = 1099; 
 			server = (Server_itf) Naming.lookup("//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server");
+		//	logger.log(Level.INFO,"Connecting to the Server");
 		}catch(Exception e){
-			System.out.println("Failed to connect to the Server");
+		//	logger.fatal("server not found, exception",e);
 			e.printStackTrace();
 		}	
 	}
@@ -49,6 +53,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		SharedObject so;
 		
 		try{
+		//	logger.log(Level.INFO,"Looking-up to the server");
 			id = server.lookup(name);
 			if(hmID.containsKey(id)){
 			 	so = hmID.get(id);
@@ -57,6 +62,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 				hmID.put(id,so);
 			}
 		}catch(RemoteException r){
+		//	logger.fatal("Connexion lost, exception",r);
 		}finally{
 			so = null;
 		}			
@@ -68,8 +74,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		//Enregistrement local		
 		int id =((SharedObject) so).getID();
 		try{
+		//	logger.log(Level.INFO,"registering name");
 			server.register(name,id);
 		}catch(RemoteException r){
+		//	logger.fatal("Connexion lost, exception",r);
 			r.printStackTrace();
 		}
 	}
@@ -84,12 +92,14 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		int id;
 		SharedObject so;
 
-		try{			
+		try{	
+		//	logger.log(Level.INFO,"creating object");		
 			id = server.create(o);		
 			so = new SharedObject(id,o,(Client)client);
 			hmID.put(id,so);
-	
+				
 	 	}catch(RemoteException r){
+		//	logger.fatal("Connexion lost, exception",r);
 			r.printStackTrace();
 		}finally{
 			so=null;
@@ -110,8 +120,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public static Object lock_read(int id) {
 		Object o;
 		try{
+		//	logger.log(Level.INFO,"lock_read to the server");
 			o = server.lock_read(id,client);
 		}catch(RemoteException r){
+		//	logger.fatal("Connexion lost, exception",r);
 			r.printStackTrace();
 		}finally{
 			o = null;
@@ -126,8 +138,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public static Object lock_write(int id) {
 		Object o;
 		try{
+		//	logger.log(Level.INFO,"lock_write to the server");
 			o = server.lock_write(id,client);
 		}catch(RemoteException r){
+		//	logger.fatal("Connexion lost, exception",r);
 			r.printStackTrace();
 		}finally{
 			o = null;

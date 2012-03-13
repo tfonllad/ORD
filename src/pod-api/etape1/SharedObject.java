@@ -99,7 +99,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			while(this.lockState==State.WLT){
 				try{
 					this.available.await();
-				}catch(InterruptedException e){}
+				}catch(InterruptedException i){}
 			}
 			this.lockState=State.RLC;
 		}

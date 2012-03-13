@@ -91,14 +91,13 @@ public class Server implements Server_itf{
 		int port;
 		String url;
 		Registry registry;
-		cpt = 0;
-		Integer I = new Integer(args[0]);
+		cpt = 0;	
 		Server_itf server = new Server();
 		
 		try{
 			port = 1099;
 			registry = LocateRegistry.createRegistry(port);
-			url ="//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server";
+			url ="//"+InetAddress.getLocalHost().getHostName()+":"+String.valueOf(port)+"/Server";
 			System.out.println(url);
 			Naming.rebind(url,server);
 		}catch(Exception e){
