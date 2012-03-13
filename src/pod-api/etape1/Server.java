@@ -20,23 +20,11 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		this.cpt = 0;
 	}
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
-		System.out.println("lock_read :"+id);
-		ServerObject so = this.hmID.get(id);
-		Object o;
-		so.lock();
-		o = so.lock_read(client);		
-		so.unlock();
-		return o;
+		return this.hmID.get(id).lock_read(client);
 	}
 
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
-		System.out.println("lock_write :"+id);	
-		ServerObject so = this.hmID.get(id);
-		Object o;
-		so.lock();
-		o = so.lock_write(client);
-		so.lock();
-		return o;
+		return this.hmID.get(id).lock_write(client);
 	}
 
  	/** Method Shared Object : called when client lookup an object.

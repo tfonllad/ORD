@@ -33,12 +33,7 @@ public class ServerObject{
 		this.lock = new ReentrantLock();
 		this.readerList = new ArrayList<Client_itf>();
 	}
-	public synchronized void lock(){
-		this.lock.lock();
-	}
-	public synchronized void unlock(){
-		this.lock.unlock();
-	}
+
 	/** Methode updateLock is called after waiting process get out the await
  	* loop.
 	* @param verrou
@@ -116,12 +111,16 @@ public class ServerObject{
 	* @return o : up-to-date object
 	**/
 	public Object lock_read(Client_itf c){
+		System.out.println("Lock in object");
+		this.lock.lock();
 		while(lockState==State.WL){
 			obj = this.reduce_lock();
 			this.readerList.add(c);
 		}
 		this.readerList.add(c);
 		lockState=State.RL;
+		this.lock.unlock();
+		System.out.println("Unlocked");
 		return obj;
 	}	
 	/**Method lock_writer : similar to lock_write, invalidate both writer
@@ -129,6 +128,8 @@ public class ServerObject{
 	* @return obj : up-to-date object
 	**/
 	public Object lock_write(Client_itf c){
+		System.out.println("Lock in object");
+		this.lock.lock();
 		while(lockState==State.WL||this.readerList.size()!=0){
 				obj = this.invalidate_writer();	
 				this.invalidate_reader();
@@ -141,7 +142,8 @@ public class ServerObject{
 		this.writer = c;
 		this.lockState = State.WL;
 		writer = c;
-
+		this.lock.unlock();
+		System.out.println("Unlocked");
 		return obj;
 	}
 }

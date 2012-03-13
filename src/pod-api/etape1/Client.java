@@ -72,11 +72,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	
 	// binding in the name server
 	public static void register(String name, SharedObject_itf so) {
-		//Enregistrement local	
-		System.out.println("Enregistrement Local");
-		if(so==null){
-			System.out.println("FU");
-		}
+		//Enregistrement local	}
 		int id =((SharedObject) so).getID();
 		System.out.println(id);
 		try{
@@ -120,13 +116,11 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	/*@return o : up-to-date object retrived from the serer
 	**/
 	public static Object lock_read(int id) {
-		Object o;
+		Object o = null;
 		try{
 			o = server.lock_read(id,client);
 		}catch(RemoteException r){
 			r.printStackTrace();
-		}finally{
-			o = null;
 		}
 		return o;	
 	}
@@ -136,13 +130,13 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	*@return o : up-to-date object retrived from the serer
 	**/
 	public static Object lock_write(int id) {
-		Object o;
+		Object o = null;
+		System.out.println("client : server.lock_write");
 		try{
 			o = server.lock_write(id,client);
+			System.out.println("client : lock_write DONE");
 		}catch(RemoteException r){
 			r.printStackTrace();
-		}finally{
-			o = null;
 		}
 		return o;
 	}

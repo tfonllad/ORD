@@ -83,6 +83,7 @@ class readListener implements ActionListener {
 		
 		// display the read value
 		irc.text.append(s+"\n");
+		System.out.println("Done READING");
 	}
 }
 
@@ -95,18 +96,17 @@ class writeListener implements ActionListener {
 		
 		// get the value to be written from the buffer
         	String s = irc.data.getText();
-        	
         	// lock the object in write mode
-		irc.sentence.lock_write();
-		
+		irc.sentence.lock_write();	
 		// invoke the method
-		((Sentence)(irc.sentence.obj)).write(Irc.myName+" wrote "+s);
+		((Sentence)(irc.sentence.obj)).write(Irc.myName+" wrote "+s);	
 		irc.data.setText("");
-		
 		// unlock the object
 		irc.sentence.unlock();
-	}
+		System.out.println("Done WRITING");
+	}	
 }
+
 
 
 
