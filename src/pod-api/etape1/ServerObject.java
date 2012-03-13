@@ -14,14 +14,13 @@ public class ServerObject{
 	//State
 	private State lockState;
 	public enum State{
-		NL;
-		RL;
+		NL,
+		RL,
 		WL;	
 	}
 	
 	//Consistency
-	private Condition nI;	
-	private ReentrantLock() lock;
+	private ReentrantLock lock;
 
 	
 	/** Constructor ServerObject
@@ -32,6 +31,7 @@ public class ServerObject{
 	public ServerObject(int id,Object o){
 		this.id = id;	
 		this.obj = o;
+		this.lock = new ReentrantLock();
 	}
 	public synchronized void lock(){
 		this.lock.lock();
@@ -83,8 +83,12 @@ public class ServerObject{
 	**/
 	public void invalidate_reader(){
 		for(Client_itf cli : readerList){
-			cli.invalidate_reader(this.id);		
-			this.readerList.remove(cli);
+			try{
+				cli.invalidate_reader(this.id);		
+				this.readerList.remove(cli);
+			}catch(RemoteException r){
+				r.prinStackTrace();
+			}
 		}
 	}	
 	/**Method reduce_lock : similar to invalidate_writer except the writer
@@ -94,9 +98,16 @@ public class ServerObject{
 	public Object reduce_lock(){
 		Client c;
 		if(writer!=null){
-			obj = writer.reduce_lock(this.id);
-			this.readerList.add(this.writer);
-			writer = null;
+			try{
+				obj = writer.reduce_lock(this.id);
+				this.readerList.add(this.writer);
+				writer = null;
+			}catch(RemoteException){
+				r.printStackTrace();
+			}finally{
+			 	writer=null; //Si on perd la connexion vers
+					//l'écrivain, on le dégage et on renvoit le dernier objet du cache
+			}
 		}
 	return obj;	
 	}
@@ -118,7 +129,7 @@ public class ServerObject{
 	* @return obj : up-to-date object
 	**/
 	public Object lock_write(Client c){
-		while(lockState==WL|this.readerList.size()!=0){
+		while(lockState==WL||this.readerList.size()!=0){
 				obj = this.invalidate_writer();	
 				this.invalidate_reader();
 		}
