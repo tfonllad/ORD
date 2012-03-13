@@ -109,7 +109,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// callback invoked remotely by the server
 	public synchronized Object reduce_lock() {
 		System.out.println("Propagationde reduce_lock : SharedObject");
-		//this.lock.lock();
+		this.lock.lock();
 		System.out.println("le SharedObject est donc locked");
 		if(this.lockState==State.WLT){
 			while(this.lockState==State.WLT){
@@ -126,7 +126,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		if(this.lockState==State.WLC){
 			this.lockState=State.RLC;
 		}
-		//this.lock.unlock();
+		this.lock.unlock();
 		System.out.println("Le SharedObject n'est plus locked");
 		return obj;
 	}
