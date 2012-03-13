@@ -10,8 +10,8 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// certain des consignes
 	
 	private static HashMap<Integer,SharedObject> localHMID;
-	private static Server server;
-	private static Client client;	
+	private static Server_itf server;
+	private static Client_itf client;	
 	
 	public static Object getObject(int id){
 		return localHMID.get(id).obj;
@@ -43,7 +43,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			client = new Client();	
 			port = 1099; 
 			registry = LocateRegistry.getRegistry(host,port);
-			server = (Server) Naming.lookup("//"+host+":"+port+"/Server");
+			server = (Server_itf) Naming.lookup("//"+host+":"+port+"/Server");
 		}catch(Exception e){
 			System.out.println("Faild to connect to the Server");
 			e.printStackTrace();
@@ -96,6 +96,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			so=null;
 	
 		return so;		
+		}
 		
 	}
 	
@@ -113,15 +114,12 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// request a write lock from the server
 	public static Object lock_write (int id) {
-		so = hmID.get(id);
-		so.lock();
-		Object o;
-	
+		
 	}
 
 	// receive a lock reduction request from the server
 	public Object reduce_lock(int id) throws java.rmi.RemoteException {
-		SharedObject so = hmID.get(id);
+		SharedObject so = localHMID.get(id);
 		Object o;
 
 		o = so.reduce_lock();
@@ -134,14 +132,14 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// receive a reader invalidation request from the server
 	public void invalidate_reader(int id) throws java.rmi.RemoteException {
-		SharedObject so = hmID.get(id);
+		SharedObject so = localHMID.get(id);
 		
 	}
 
 
 	// receive a writer invalidation request from the server
 	public Object invalidate_writer(int id) throws java.rmi.RemoteException {
-		SharedObject so = hmID.get(id);
+		SharedObject so = localHMID.get(id);
 		Object o;
 
 		so = so.invalidate_writer();
