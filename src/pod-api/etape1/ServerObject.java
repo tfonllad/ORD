@@ -2,7 +2,7 @@
 **/
 import java.util.ArrayList;
 import java.util.concurrent.locks.*;
-
+import java.rmi.*;
 public class ServerObject{
 
 	//identification	
@@ -102,7 +102,7 @@ public class ServerObject{
 				obj = writer.reduce_lock(this.id);
 				this.readerList.add(this.writer);
 				writer = null;
-			}catch(RemoteException){
+			}catch(RemoteException r){
 				r.printStackTrace();
 			}finally{
 			 	writer=null; //Si on perd la connexion vers
@@ -121,7 +121,6 @@ public class ServerObject{
 			obj = this.reduce_lock();
 		}
 		lockState=RL;
-		read.signal();		//réveil en chaîne
 		return obj;
 	}	
 	/**Method lock_writer : similar to lock_write, invalidate both writer

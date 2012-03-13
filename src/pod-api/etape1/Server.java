@@ -25,7 +25,7 @@ public class Server implements Server_itf{
 		ServerObject so = this.hmID.getID();
 		Object o;
 		so.lock();
-		o = so.lock_write(client);
+		o = so.lock_write((Client)client);
 		so.lock();
 		return o;
 	}
@@ -66,7 +66,7 @@ public class Server implements Server_itf{
 	**/
 	public void register(String name,int id) throws java.rmi.RemoteException{
 			ServerObject so = this.hmID.get(id);
-			if(!hmName.contains(name)){
+			if(!hmName.containsKey(name)){
 				this.hmName.put(name,id);
 			}else{ 	/* name already bound to another object */
 			 	/* lancer une exception rmi ou  ne rien faire */

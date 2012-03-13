@@ -9,7 +9,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// Vérifier qu'on a le droit de rajouter un attribut. Je suis pas
 	// certain des consignes -> OK tant qu'ils sont en privé et qu'on change pas l'interface
 	
-	private static HashMap<Integer,SharedObject> localHMID;
+	private static HashMap<Integer,SharedObject> hmID;
 	private static Server_itf server;
 	private static Client_itf client;	
 	
@@ -18,7 +18,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	}
 
 	public static Object getObject(int id){
-		return localHMID.get(id).obj;
+		return hmID.get(id).obj;
 	}
 	
 ///////////////////////////////////////////////////
@@ -27,7 +27,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// initialization of the client layer -> OK
 	public static void init() {
-		localHMID = new HashMap<Integer,SharedObject>();
+		hmID = new HashMap<Integer,SharedObject>();
 		try{  	
 			client = new Client();	
 			int port = 1099; 
@@ -50,11 +50,11 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		
 		try{
 			id = server.lookup(name);
-			if(localHMID.contains(id)){
-			 	so = localHMID.get(id);
+			if(hmID.containsKey(id)){
+			 	so = hmID.get(id);
 			}else{
-				so = new SharedObject(id,server.getObj(id),client);
-				localHMID.put(id,so);
+				so = new SharedObject(id,server.getObject(id),client);
+				hmID.put(id,so);
 			}
 		}catch(RemoteException r){
 		}finally{
@@ -86,9 +86,8 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 		try{			
 			id = server.create(o);		
-			server.initialize(id,client);
-			so = new SharedObject(id,o);
-			localHMID.put(id,so);
+			so = new SharedObject(id,o,client);
+			hmID.put(id,so);
 	
 	 	}catch(RemoteException r){
 			r.printStackTrace();
