@@ -16,16 +16,16 @@ public class Server implements Server_itf{
 		ServerObject so = this.hmID.get(id);
 		Object o;
 		so.lock();
-		o = so.lock_read((Client)client);		
+		o = so.lock_read(client);		
 		so.unlock();
 		return o;
 	}
 
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
-		ServerObject so = this.hmID.getID();
+		ServerObject so = this.hmID.get(id);
 		Object o;
 		so.lock();
-		o = so.lock_write((Client)client);
+		o = so.lock_write(client);
 		so.lock();
 		return o;
 	}

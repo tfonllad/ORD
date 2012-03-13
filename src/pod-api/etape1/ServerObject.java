@@ -22,7 +22,6 @@ public class ServerObject{
 	//Consistency
 	private ReentrantLock lock;
 
-	
 	/** Constructor ServerObject
 	*@param id : the unique id.
 	*@param o : cached object. Used for lookup and reader without writer
@@ -70,8 +69,11 @@ public class ServerObject{
 	public Object invalidate_writer(){
 		Client c;
 		if(writer!=null){
-			obj = writer.invalidate_writer(this.id);
-			writer = null;
+			try{
+				obj = writer.invalidate_writer(this.id);
+				writer = null;
+			}catch(RemoteException r){
+			}
 		}
 		return obj;
 	}
@@ -84,7 +86,7 @@ public class ServerObject{
 				cli.invalidate_reader(this.id);		
 				this.readerList.remove(cli);
 			}catch(RemoteException r){
-				r.prinStackTrace();
+				r.printStackTrace();
 			}
 		}
 	}	
@@ -126,7 +128,7 @@ public class ServerObject{
 	* @return obj : up-to-date object
 	**/
 	public Object lock_write(Client_itf c){
-		while(lockState==WL||this.readerList.size()!=0){
+		while(lockState==State.WL||this.readerList.size()!=0){
 				obj = this.invalidate_writer();	
 				this.invalidate_reader();
 		}
