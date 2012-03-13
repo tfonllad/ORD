@@ -45,7 +45,6 @@ public class ServerObject{
 	public synchronized Object lock_read(Client_itf c){
 		this.lock.lock();
 		if(lockState==State.WL){
-			if(writer!=null){
 			try{
 				obj = writer.reduce_lock(this.id);
 				this.readerList.add(this.writer);
@@ -53,10 +52,9 @@ public class ServerObject{
 			}catch(RemoteException r){
 				r.printStackTrace();
 			}finally{
-			 	writer=null;
-			}
-			this.readerList.add(c);
-			}
+		 		writer=null;
+			}	
+			this.readerList.add(c);		
 		}
 		this.readerList.add(c);
 		lockState=State.RL;
@@ -80,7 +78,9 @@ public class ServerObject{
 				try{
 					cli.invalidate_reader(this.id);		
 					this.readerList.remove(cli);
-				}catch(RemoteException r){}
+				}catch(RemoteException r){
+					r.printStackTrace();
+				}
 			}
 		}
 		try{
