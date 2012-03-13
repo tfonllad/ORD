@@ -42,7 +42,7 @@ public class ServerObject{
  	* method call reduce_lock on the writer if not null
 	* @return o : up-to-date object
 	**/
-	public synchronized Object lock_read(Client_itf c){
+	public synchronized void lock_read(Client_itf c){
 		this.lock.lock();
 		if(lockState==State.WL){
 			try{
@@ -59,13 +59,12 @@ public class ServerObject{
 		this.readerList.add(c);
 		lockState=State.RL;
 		this.lock.unlock();
-		return obj;
 	}	
 	/**Method lock_writer : similar to lock_write, invalidate both writer
  	* and readers.
 	* @return obj : up-to-date object
 	**/
-	public synchronized Object lock_write(Client_itf c){
+	public synchronized void lock_write(Client_itf c){
 		this.lock.lock();
 		if(lockState==State.WL||this.readerList.size()!=0){	
 			if(writer!=null){
@@ -90,6 +89,5 @@ public class ServerObject{
 		this.lockState = State.WL;
 		writer = c;
 		this.lock.unlock();
-		return obj;
 	}
 }

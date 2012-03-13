@@ -19,14 +19,17 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		this.hmID = new HashMap<Integer,ServerObject>();
 		this.cpt = 0;
 	}
-	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{
-		System.out.println("Propagation de lock_read : server");	
-		return this.hmID.get(id).lock_read(client);
+	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
+		ServerObject so = this.hmID.get(id);
+		so.lock_read(client);
+		return so.obj;
 	}
 
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
 		System.out.println("Propagation de lock_write");
-		return this.hmID.get(id).lock_write(client);
+		ServerObject so = this.hmID.get(id);
+		so.lock_write(client);
+		return so.obj;
 	}
 
  	/** Method Shared Object : called when client lookup an object.

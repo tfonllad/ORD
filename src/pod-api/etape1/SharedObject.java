@@ -55,10 +55,8 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// invoked by the user program on the client node
 	public void lock_write() {
 		switch(this.lockState){
-		
 			case WLC:
-				System.out.println("Pre : WLC");
-				//client.lock_write(this.id);
+				System.out.println("Pre : WLC");	
 				this.lockState=State.WLT;
 				System.out.println("Post : WLT");	
 			break;
@@ -79,16 +77,8 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		}
 	}
 
-	public synchronized void lock(){
-		this.lock.lock();
-	}
-	public synchronized void unlockLock(){
-		this.lock.unlock();
-	}
-	
-
 	// invoked by the user program on the client node
-	public synchronized void unlock() {
+	public void unlock() {
 		this.lock.lock();
 		switch(this.lockState){
 			case RLT:
@@ -102,7 +92,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			lockState = State.WLC;
 			System.out.println("State = WLC");
 		}
-		this.available.signal();
+		this.available.signal();	
 		this.lock.unlock();
 	}
 
