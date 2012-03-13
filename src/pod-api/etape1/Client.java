@@ -34,7 +34,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		try{  	
 			client = new Client();	
 			int port = 1099; 
-			server = (Server_itf) Naming.lookup("//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server");
+			server = (Server_itf)Naming.lookup("//"+"pipo"+":"+String.valueOf(port)+"/Server");
 		//	logger.log(Level.INFO,"Connecting to the Server");
 		}catch(Exception e){
 		//	logger.fatal("server not found, exception",e);

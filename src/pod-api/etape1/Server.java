@@ -97,9 +97,9 @@ public class Server implements Server_itf{
 		try{
 			port = 1099;
 			registry = LocateRegistry.createRegistry(port);
-			url ="//"+InetAddress.getLocalHost().getHostName()+":"+String.valueOf(port)+"/Server";
+			url ="//"+"pipo"+":"+String.valueOf(port)+"/Server";
 			System.out.println(url);
-			Naming.rebind(url,server);
+			Naming.bind(url,server);
 		}catch(Exception e){
 			System.out.println("Fail to initialize Server");
 			e.printStackTrace();
