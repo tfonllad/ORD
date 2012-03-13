@@ -31,6 +31,7 @@ public class ServerObject{
 		this.id = id;	
 		this.obj = o;
 		this.lock = new ReentrantLock();
+		this.readerList = new ArrayList<Client_itf>();
 	}
 	public synchronized void lock(){
 		this.lock.lock();

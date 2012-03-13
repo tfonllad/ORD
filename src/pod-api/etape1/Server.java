@@ -20,6 +20,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		this.cpt = 0;
 	}
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
+		System.out.println("lock_read :"+id);
 		ServerObject so = this.hmID.get(id);
 		Object o;
 		so.lock();
@@ -29,6 +30,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	}
 
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
+		System.out.println("lock_write :"+id);	
 		ServerObject so = this.hmID.get(id);
 		Object o;
 		so.lock();
@@ -55,6 +57,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	**/
 	public int lookup(String name) throws java.rmi.RemoteException{
 		int id;
+		System.out.println("lookup");
 		if(this.hmName.containsKey(name)){
 			id = this.hmName.get(name);
 		}else{
@@ -70,6 +73,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	* @throws RemoteException
 	**/
 	public void register(String name,int id) throws java.rmi.RemoteException{
+			System.out.println("Register");
 			ServerObject so = this.hmID.get(id);
 			if(!hmName.containsKey(name)){
 				this.hmName.put(name,id);
