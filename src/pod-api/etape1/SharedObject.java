@@ -10,16 +10,8 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	private ReentrantLock lock;
 	private Condition available;
 	private Client client;
-	private Condition nI;
-	private boolean ini;
-	private int waintingWriter;
+	private int waitingWriter;
 
-	public boolean isINI(){
-		return this.ini;
-	}
-	public void setINI(){	
-		this.ini = true;
-	}
 	public enum State{	
 		NL,
 		RLT,
@@ -32,32 +24,25 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public SharedObject(int id,Object object,Client c){
 		this.id = id;
 		this.obj = object;
-		this.lockState = NI;
-	this.client = c;
+		this.lockState = State.NL;
+		this.client = c;
+		this.waitingWriter = 0;
 		this.lock = new ReentrantLock();
-		this.nI = this.lock.newCondition();
 		this.available = this.lock.newCondition();
 	}
 
-	public synchronized void signalINI(){
-		this.nI.signal();
-	}
-	
-	public synchronized void awaitINI() throws InterruptedException{
-		this.nI.await();
-	}
 	// invoked by the user program on the client node
 	public void lock_read() {
 		switch(this.lockState){
 			case RLC :
-				this.updateLock(RLT);	
+				this.lockState=State.RLT;
 			break;
 			case WLC:
-				this.updateLock(RLT_WLC);
+				this.lockState=State.RLT_WLC;
 			break;
 			default:
 				this.obj = client.lock_read(this.id);
-				this.lockState=RLT;
+				this.lockState=State.RLT;
 			break;					
 		}
 		
@@ -69,15 +54,15 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		
 			case WLC:
 				client.lock_write(this.id);
-				this.lockState=WLT;
+				this.lockState=State.WLT;
 			
 			break;
 			default: 
 				if(this.waitingWriter==0){
 					this.obj =  client.lock_write(this.id);
-					this.lockState=WLT;
+					this.lockState=State.WLT;
 				}else{
-					this.lockState=NL;
+					this.lockState=State.NL;
 	 				this.available.signal();
 					this.lock_write();
 				}
@@ -97,12 +82,12 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public synchronized void unlock() {
 		switch(this.lockState){
 			case RLT:
-			lockState = RLC;
+			lockState = State.RLC;
 			break;
 			case WLT:
-			lockState = WLC;
+			lockState = State.WLC;
 			case RLT_WLC:
-			lockState = WLC;
+			lockState = State.WLC;
 		}
 		this.available.signal();
 	}
@@ -110,17 +95,19 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// callback invoked remotely by the server
 	public synchronized Object reduce_lock() {
 		this.lock.lock();
-		if(this.lockState==WLT){
-			while(this.lockState==WLT){
-				this.available.await();
+		if(this.lockState==State.WLT){
+			while(this.lockState==State.WLT){
+				try{
+					this.available.await();
+				}catch(InterruptedException e){}
 			}
-			this.lockState=RLC;
+			this.lockState=State.RLC;
 		}
-		if(this.lockState==RLT_WLC){
-			this.lockState=RLT;
+		if(this.lockState==State.RLT_WLC){
+			this.lockState=State.RLT;
 		}
-		if(this.lockState==WLC){
-			this.lockState=RLC;
+		if(this.lockState==State.WLC){
+			this.lockState=State.RLC;
 		}
 		this.lock.unlock();
 		return obj;
@@ -129,25 +116,25 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// callback invoked remotely by the server
 	public synchronized void invalidate_reader() {
 		this.lock.lock();
-		while(this.lockState==RLT){
+		while(this.lockState==State.RLT){
 			try{
 				this.waitingWriter+=1;
 				this.available.await();
 				this.waitingWriter-=1;
 			}catch(InterruptedException r){}
 		}
-		this.updateLock(NL);
+		this.lockState=State.NL;
 		this.lock.lock();
 	}
 
 	public synchronized Object invalidate_writer() {
 		this.lock.lock();	
-		while(this.lockState==WLT){
+		while(this.lockState==State.WLT){
 			try{
 				this.available.await();
 			}catch(InterruptedException t){}
 		}
-		this.lockState=NL;
+		this.lockState=State.NL;
 		this.unlock();	
 		return obj;
 				

@@ -16,7 +16,7 @@ public class Server implements Server_itf{
 		ServerObject so = this.hmID.get(id);
 		Object o;
 		so.lock();
-		o = so.lock_read(client);		
+		o = so.lock_read((Client)client);		
 		so.unlock();
 		return o;
 	}

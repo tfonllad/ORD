@@ -53,12 +53,12 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			if(hmID.containsKey(id)){
 			 	so = hmID.get(id);
 			}else{
-				so = new SharedObject(id,server.getObject(id),client);
+				so = new SharedObject(id,((Server)server).getObject(id),(Client)client);
 				hmID.put(id,so);
 			}
 		}catch(RemoteException r){
 		}finally{
-			so = new SharedObject(id,null,client);
+			so = null;
 		}			
 		return so;
 	}		
@@ -86,7 +86,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 		try{			
 			id = server.create(o);		
-			so = new SharedObject(id,o,client);
+			so = new SharedObject(id,o,(Client)client);
 			hmID.put(id,so);
 	
 	 	}catch(RemoteException r){

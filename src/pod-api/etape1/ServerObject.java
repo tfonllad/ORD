@@ -46,17 +46,14 @@ public class ServerObject{
 	**/
 	public void updateLock(State verrou){
 		switch(verrou){
-			case NI:
-				this.lockState = NI;
-			break;
 			case NL:
-				this.lockState = NL;
+				this.lockState = State.NL;
 			break;
 			case RL:
-				this.lockState = RL;
+				this.lockState = State.RL;
 			break;
 			case WL:
-				this.lockState = WL;
+				this.lockState = State.WL;
 			break;
 		}
 	}
@@ -96,7 +93,6 @@ public class ServerObject{
          *@return o : up-to-date object
 	**/
 	public Object reduce_lock(){
-		Client c;
 		if(writer!=null){
 			try{
 				obj = writer.reduce_lock(this.id);
@@ -116,24 +112,33 @@ public class ServerObject{
  	* method call reduce_lock on the writer if not null
 	* @return o : up-to-date object
 	**/
-	public Object lock_read(Client c){
-		while(lockState==WL){
+	public Object lock_read(Client_itf c){
+		while(lockState==State.WL){
 			obj = this.reduce_lock();
+			this.readerList.add(c);
 		}
-		lockState=RL;
+		this.readerList.add(c);
+		lockState=State.RL;
 		return obj;
 	}	
 	/**Method lock_writer : similar to lock_write, invalidate both writer
  	* and readers.
 	* @return obj : up-to-date object
 	**/
-	public Object lock_write(Client c){
+	public Object lock_write(Client_itf c){
 		while(lockState==WL||this.readerList.size()!=0){
 				obj = this.invalidate_writer();	
 				this.invalidate_reader();
 		}
-		this.lockState = WL;
+		try{
+			this.readerList.remove(c);
+		}catch(Exception e){
+		//none
+		}
+		this.writer = c;
+		this.lockState = State.WL;
 		writer = c;
+
 		return obj;
 	}
 }
