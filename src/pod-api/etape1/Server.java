@@ -24,6 +24,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	}
 
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
+		System.out.println("Propagation de lock_write");
 		return this.hmID.get(id).lock_write(client);
 	}
 
@@ -46,10 +47,12 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	public int lookup(String name) throws java.rmi.RemoteException{
 		int id;
 		System.out.println("lookup");
-		if(this.hmName.containsKey(name)){
-			id = this.hmName.get(name);
-		}else{
+		if(!this.hmName.containsKey(name)){
+			System.out.println("Name not found");
 			id = 0;
+		}else{
+			System.out.println("Name found");	
+			id = this.hmName.get(name);
 		}
 		return id;		
 	} 
@@ -67,6 +70,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 				this.hmName.put(name,id);
 			}else{ 	/* name already bound to another object */
 			 	/* lancer une exception rmi ou  ne rien faire */
+				System.out.println("Le server possède déjà lenom");
 			}
 	}
 

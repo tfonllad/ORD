@@ -29,6 +29,7 @@ public class Irc extends Frame {
 		// if not found, create it, and register it in the name server
 		SharedObject s = Client.lookup("IRC");
 		if (s == null) {
+			System.out.println("Création de IRC");
 			s = Client.create(new Sentence());
 			Client.register("IRC", s);
 		}

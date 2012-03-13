@@ -45,7 +45,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 	public static SharedObject lookup(String name){
 		int id;
-		SharedObject so;
+		SharedObject so=null;
 		
 		try{
 			id = server.lookup(name);
@@ -57,6 +57,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 				id = server.lookup(name);
 				if(id==0){
 					so = null;
+					System.out.println("Il faudra le crée");
 				}else{
 					so = new SharedObject(id,null,(Client)client);
 					hmID.put(id,so);
@@ -64,9 +65,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			}
 		}catch(RemoteException r){
 			System.out.println("Connexion Lost");
-		}finally{
-			so = null;
-		}			
+		}	
 		return so;
 	}		
 	
@@ -131,10 +130,11 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 	public static Object lock_write(int id) {
 		Object o = null;
-		System.out.println("client : server.lock_write");
+		
 		try{
+			System.out.println("client : server.lock_write");
 			o = server.lock_write(id,client);
-			System.out.println("client : lock_write DONE");
+			System.out.println("client : server.lock_write DONE");
 		}catch(RemoteException r){
 			r.printStackTrace();
 		}

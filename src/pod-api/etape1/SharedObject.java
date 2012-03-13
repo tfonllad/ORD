@@ -66,6 +66,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 				if(this.waitingWriter==0){
 					System.out.println("client.lock_write");	
 					this.obj =  client.lock_write(this.id);
+					System.out.println("Client done lock_write");
 					this.lockState=State.WLT;
 					System.out.println("Post = WLT");
 				}else{
@@ -141,10 +142,13 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	}
 
 	public synchronized Object invalidate_writer() {
-		this.lock.lock();	
+		this.lock.lock();
+		System.out.println("Shared : IW");	
 		while(this.lockState==State.WLT){
 			try{
+				System.out.println("await");
 				this.available.await();
+				System.out.println("debloquage");
 			}catch(InterruptedException t){}
 		}
 		this.lockState=State.NL;
