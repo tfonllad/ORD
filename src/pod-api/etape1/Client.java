@@ -34,8 +34,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		try{  	
 			client = new Client();	
 			int port = 1099; 
-			server = (Server_itf)Naming.lookup("//"+"pipo"+":"+String.valueOf(port)+"/Server");
+			server = (Server_itf)Naming.lookup("//"+"localhost"+":"+String.valueOf(port)+"/Server");
 		//	logger.log(Level.INFO,"Connecting to the Server");
+			System.out.println("INIT DONE");
 		}catch(Exception e){
 		//	logger.fatal("server not found, exception",e);
 			e.printStackTrace();
@@ -56,12 +57,20 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		//	logger.log(Level.INFO,"Looking-up to the server");
 			id = server.lookup(name);
 			if(hmID.containsKey(id)){
+				System.out.println("objet déja existant");
 			 	so = hmID.get(id);
 			}else{
-				so = new SharedObject(id,null,(Client)client);
-				hmID.put(id,so);
+				System.out.println("Appel server.lookup()");
+				id = server.lookup(name);
+				if(id==0){
+					so = null;
+				}else{
+					so = new SharedObject(id,null,(Client)client);
+					hmID.put(id,so);
+				}
 			}
 		}catch(RemoteException r){
+			System.out.println("Connexion Lost");
 		//	logger.fatal("Connexion lost, exception",r);
 		}finally{
 			so = null;
@@ -71,8 +80,13 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	
 	// binding in the name server
 	public static void register(String name, SharedObject_itf so) {
-		//Enregistrement local		
+		//Enregistrement local	
+		System.out.println("Enregistrement Local");
+		if(so==null){
+			System.out.println("FU");
+		}
 		int id =((SharedObject) so).getID();
+		System.out.println(id);
 		try{
 		//	logger.log(Level.INFO,"registering name");
 			server.register(name,id);
@@ -80,6 +94,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		//	logger.fatal("Connexion lost, exception",r);
 			r.printStackTrace();
 		}
+		System.out.println("Register Done");
 	}
 
 	// creation of a shared object
@@ -89,8 +104,8 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	* @return so : local representation of the object.
 	*/
 	public static SharedObject create(Object o) {
-		int id;
-		SharedObject so;
+		int id = -1;
+		SharedObject so = null;
 
 		try{	
 		//	logger.log(Level.INFO,"creating object");		
@@ -101,9 +116,8 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	 	}catch(RemoteException r){
 		//	logger.fatal("Connexion lost, exception",r);
 			r.printStackTrace();
-		}finally{
-			so=null;
 		}
+		System.out.println("CREATE DONE with id "+id);
 		return so;		
 		
 	}

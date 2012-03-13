@@ -5,13 +5,20 @@ import java.util.HashMap;
 import java.rmi.registry.*;
 import java.rmi.*;
 import java.net.*;
+import java.rmi.server.UnicastRemoteObject;
 
-public class Server implements Server_itf{
+public class Server extends UnicastRemoteObject implements Server_itf{
 
 	private HashMap<String,Integer> hmName; 
 	private HashMap<Integer,ServerObject> hmID;
 	private static int cpt; 				//generation of id
-
+	
+	public Server() throws RemoteException{
+		super();
+		this.hmName = new HashMap<String,Integer>();
+		this.hmID = new HashMap<Integer,ServerObject>();
+		this.cpt = 0;
+	}
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
 		ServerObject so = this.hmID.get(id);
 		Object o;
@@ -47,13 +54,11 @@ public class Server implements Server_itf{
 	* @throws RemoteException
 	**/
 	public int lookup(String name) throws java.rmi.RemoteException{
-		int id = this.hmName.get(name);
-		ServerObject so = this.hmID.get(id);
-		if (so==null){
-			id=0; // id = 0 <=> object not found
-		}
-		else{
-			id = so.getID();
+		int id;
+		if(this.hmName.containsKey(name)){
+			id = this.hmName.get(name);
+		}else{
+			id = 0;
 		}
 		return id;		
 	} 
@@ -90,14 +95,13 @@ public class Server implements Server_itf{
 	public static void main(String args[]){
 		int port;
 		String url;
-		Registry registry;
-		cpt = 0;	
-		Server_itf server = new Server();
-		
+		Registry registry;	
+		Server server;		
 		try{
+			server = new Server();
 			port = 1099;
 			registry = LocateRegistry.createRegistry(port);
-			url ="//"+"pipo"+":"+String.valueOf(port)+"/Server";
+			url ="//"+"localhost"+":"+String.valueOf(port)+"/Server";
 			System.out.println(url);
 			Naming.bind(url,server);
 		}catch(Exception e){
