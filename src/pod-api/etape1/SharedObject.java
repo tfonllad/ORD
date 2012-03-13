@@ -108,10 +108,13 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	// callback invoked remotely by the server
 	public synchronized Object reduce_lock() {
-		this.lock.lock();
+		System.out.println("Propagationde reduce_lock : SharedObject");
+		//this.lock.lock();
+		System.out.println("le SharedObject est donc locked");
 		if(this.lockState==State.WLT){
 			while(this.lockState==State.WLT){
 				try{
+					System.out.println("await");
 					this.available.await();
 				}catch(InterruptedException i){}
 			}
@@ -123,7 +126,8 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		if(this.lockState==State.WLC){
 			this.lockState=State.RLC;
 		}
-		this.lock.unlock();
+		//this.lock.unlock();
+		System.out.println("Le SharedObject n'est plus locked");
 		return obj;
 	}
 
@@ -133,6 +137,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		while(this.lockState==State.RLT){
 			try{
 				this.waitingWriter+=1;
+				System.out.println("ReaderAwait");
 				this.available.await();
 				this.waitingWriter-=1;
 			}catch(InterruptedException r){}
@@ -148,7 +153,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			try{
 				System.out.println("await");
 				this.available.await();
-				System.out.println("debloquage");
 			}catch(InterruptedException t){}
 		}
 		this.lockState=State.NL;

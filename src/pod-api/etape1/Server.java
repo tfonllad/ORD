@@ -19,7 +19,8 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		this.hmID = new HashMap<Integer,ServerObject>();
 		this.cpt = 0;
 	}
-	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
+	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{
+		System.out.println("Propagation de lock_read : server");	
 		return this.hmID.get(id).lock_read(client);
 	}
 
