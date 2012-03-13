@@ -165,20 +165,14 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	private static Server_itf server;
 	private static Client_itf client;	
 	
+	public Client() throws RemoteException {
+		super();
+	}
+
 	public static Object getObject(int id){
 		return localHMID.get(id).obj;
 	}
-	public static SharedObject getSharedObject(int id){
-		return localHMID.get(id);
-	}
-
-	public Client() throws RemoteException {
-		super();
-		//HashMap déjà initialisée dans le init ? OUI.
-		localHMID = new HashMap<Integer,SharedObject>();
-	}
-
-
+	
 ///////////////////////////////////////////////////
 //         Interface to be used by applications
 ///////////////////////////////////////////////////
@@ -186,7 +180,6 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// initialization of the client layer -> OK
 	public static void init() {
 		localHMID = new HashMap<Integer,SharedObject>();
-		//Connexion
 		try{  	
 			client = new Client();	
 			int port = 1099; 
@@ -198,17 +191,23 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	}
 
 	// lookup in the name server
+	/**Method lookup : get the Shared object from the server. If the object
+ 	* is not found , return a SharedObject with obj==null
+	*@param name : name of registred object
+	*@return so : the local SharedObject
+	**/
 	public static SharedObject lookup(String name){
 		int id;
 		SharedObject so;
 		
 		try{
 			id = server.lookup(name);
-			if(localhmID.contains(id)){
-			 	so = localhmID.get(id);
+			if(localHMID.contains(id)){
+			 	so = localHMID.get(id);
 			}else{
 				so = new SharedObject(id,server.getObj(id),client);
 				localHMID.put(id,so);
+			}
 		}catch(RemoteException r){
 		}finally{
 			so = new SharedObject(id,null,client);
@@ -219,17 +218,21 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// binding in the name server
 	public static void register(String name, SharedObject_itf so) {
 		//Enregistrement local		
-		int objID =((SharedObject) so).getID();
+		int id =((SharedObject) so).getID();
 		try{
-			server.register(name,objID);
+			server.register(name,id);
 		}catch(RemoteException r){
 			r.printStackTrace();
 		}
 	}
 
 	// creation of a shared object
+	/**Method create : give o to the server wich will deliver id and cache
+ 	* it. 
+	* @param o : object to share.
+	* @return so : local representation of the object.
+	*/
 	public static SharedObject create(Object o) {
-		//communication avec le server, renvoit un id idObj
 		int id;
 		SharedObject so;
 
@@ -243,6 +246,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			r.printStackTrace();
 		}finally{
 			so=null;
+		}
 		return so;		
 		
 	}
@@ -252,23 +256,44 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 ////////////////////////////////////////////////////////////
 
 	// request a read lock from the server
+	/** Method lock_read request a read lock from the server
+	/*@param id : the id of the object to lock
+	/*@return o : up-to-date object retrived from the serer
+	**/
 	public static Object lock_read(int id) {
-		so = hmID.get(id);
 		Object o;
-		o = server.lock_read(id,client);
+		try{
+			o = server.lock_read(id,client);
+		}catch(RemoteException r){
+			r.printStackTrace();
+		}finally{
+			o = null;
+		}
 		return o;	
 	}
 
-	// request a write )
-	public static Obhect lock_write(int id) {
-		so.lock();
-		so = hmID.get(id);
+	/** Method lock_write request a write lock from the server
+	*@param id : the id of the object to lock
+	*@return o : up-to-date object retrived from the serer
+	**/
+	public static Object lock_write(int id) {
 		Object o;
-		o = server.lock_write(id,client)
-		so.unlockLock();
+		try{
+			o = server.lock_write(id,client);
+		}catch(RemoteException r){
+			r.printStackTrace();
+		}finally{
+			o = null;
+		}
+		return o;
 	}
 
 	// receive a lock reduction request from the server
+	/**Method reduce_lock : called on the client when he has WLC/WLT he will
+	 * keep the right to read but loose WLC/WLT.
+	 *@param id : the id of the targeted object.
+	 *@return o : the up-to-date object given back to the server
+	**/
 	public Object reduce_lock(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
 		Object o;
@@ -279,6 +304,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	}
 
 	// receive a reader invalidation request from the server
+	/**Method invalidate_reader : release RLT/RLC
+	 *@param id : the id of the targeted object.
+	**/
 	public void invalidate_reader(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
 		so.lock();
@@ -287,11 +315,15 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	}
 
 	// receive a writer invalidation request from the server
+	/**Method invalidate_writer : release WLC/WLT/WLC_RLT
+	 *@param id : the id of the targeted object.
+	 *@return o : the up-to-date object given back to the server
+	**/
 	public Object invalidate_writer(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
 		Object o;
 		so.lock();
-		so = so.invalidate_writer();
+		o = so.invalidate_writer();
 		so.unlockLock();
 		return o;
 	}	

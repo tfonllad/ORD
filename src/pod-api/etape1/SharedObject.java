@@ -20,13 +20,12 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public void setINI(){	
 		this.ini = true;
 	}
-	public enum State{{
-		NI;
-		NL;
-		RLT;
-		WLT;
-		RLC;
-		WLC;
+	public enum State{	
+		NL,
+		RLT,
+		WLT,
+		RLC,
+		WLC,
 		RLT_WLC;
 	}
 
@@ -40,28 +39,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.available = this.lock.newCondition();
 	}
 
-	public synchronized void updateLock(State verrou){
-		switch(verrou){
-			case NI:
-				this.lockState = NI; 
-			break;
-			case NL:
-				this.lockState = NL;
-			break;
-			case RLC:
-				this.lockState = RLC;
-			break;
-			case WLC:
-				this.lockState = WLC;
-			break;
-			case RLT:
-				this.lockState = RLT;
-			break;
-			case RLT_WLC:
-				this.lockState = RLT_WLC;
-			break;
-		}
-	}
 	public synchronized void signalINI(){
 		this.nI.signal();
 	}
@@ -118,7 +95,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	// invoked by the user program on the client node
 	public synchronized void unlock() {
-		switch lockState{
+		switch(this.lockState){
 			case RLT:
 			lockState = RLC;
 			break;

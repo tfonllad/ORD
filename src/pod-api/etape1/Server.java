@@ -8,9 +8,9 @@ import java.net.*;
 
 public class Server implements Server_itf{
 
-	private HashMap<String,ServerObject> hmName; 
+	private HashMap<String,Integer> hmName; 
 	private HashMap<Integer,ServerObject> hmID;
-	private int cpt; 				//generation of id
+	private static int cpt; 				//generation of id
 
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
 		ServerObject so = this.hmID.get(id);
@@ -22,9 +22,6 @@ public class Server implements Server_itf{
 	}
 
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
-		//meme shéma qu'au dessus : attente bloquant sur initialisation,
-		//e bloquante sur le droit d'écriture
-		//après avoir le droit d'écriture, aller invalider
 		ServerObject so = this.hmID.getID();
 		Object o;
 		so.lock();
@@ -33,10 +30,9 @@ public class Server implements Server_itf{
 		return o;
 	}
 
- 	/** Method Shared Object : Called when Client1 lookup(obj) and the server
- 	* has to take this obj from Client2
+ 	/** Method Shared Object : called when client lookup an object.
 	* @param id : id of the object
-	* @return SharedObject from client2
+	* @return obj : from cache
 	**/
 
 	public Object getObject(int id) throws java.rmi.RemoteException{
@@ -44,31 +40,22 @@ public class Server implements Server_itf{
 	}
 		
 
-	/**Method lookup : return the ID of object "name" if it was registered, otherwise return null
-	* @param String
-	* @return int
+	/**Method lookup : return the ID of object "name" if it was registered,
+ 	* otherwise return id = 0
+	* @param name
+	* @return id
 	* @throws RemoteException
 	**/
 	public int lookup(String name) throws java.rmi.RemoteException{
-		int resID;
-		ServerObject sObj = this.hmName.get(name);
-		if (sObj==null){
-			//valeur de id caractéristique de l'abscence de l'objet.
-			resID=0;
+		int id = this.hmName.get(name);
+		ServerObject so = this.hmID.get(id);
+		if (so==null){
+			id=0; // id = 0 <=> object not found
 		}
 		else{
-			resID = sObj.getID();
+			id = so.getID();
 		}
-		sObj.lock();
-		while(!sObj.isINI()){
-			try{
-				sObj.awaitINI();	
-			}catch(InterruptedException i){
-			}
-		}
-		sObj.signalINI();
-		sObj.unlock();
-		return resID;		
+		return id;		
 	} 
 	
 	/** Method Register : register the name and ID of a ServerObject
@@ -79,34 +66,27 @@ public class Server implements Server_itf{
 	**/
 	public void register(String name,int id) throws java.rmi.RemoteException{
 			ServerObject so = this.hmID.get(id);
-			this.hmName.put(name,so);
-			this.hmID.get(id).setINI();
-			this.hmID.get(id).signalINI;
+			if(!hmName.contains(name)){
+				this.hmName.put(name,id);
+			}else{ 	/* name already bound to another object */
+			 	/* lancer une exception rmi ou  ne rien faire */
+			}
 	}
-	
+
 	/** Method create : create Server Object, add it to hmID and return ID
 	* @param o : the object to create 
-	* @return int : the ID
+	* @return cpt : the ID
 	* @throws RemoteException
 	**/
 	public int create(Object o) throws java.rmi.RemoteException{
-		int id =  cpt;
 		cpt = cpt+1;
-		ServerObject so = new ServerObject(id,o);
-		this.hmID.put(id,so);
-		return id;
-	}
-	
-	/**Method initialize : add the client to the list of client disposing of
- 	* up-to-date SharedObject. The Client here did call create.
-	* @param id : id of the ServerObject
-	* @param client : Client_itf identify the client
-	* @return void
-	**/
-	public void initialize(int id,Client_itf client) throws java.rmi.RemoteException{	
-		this.hmID.get(id).addClient(clientR);
+		ServerObject so = new ServerObject(cpt,o);
+		this.hmID.put(cpt,so);
+		return cpt;
 	}
 
+	/** Main : create server and server name, wait for connexion
+	**/
 	public static void main(String args[]){
 		int port;
 		String url;
