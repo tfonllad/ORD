@@ -95,22 +95,17 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	public static void main(String args[]){
 		int port;
 		String url;
-<<<<<<< HEAD
-		Registry registry;
-		cpt = 0;
-		Server_itf server = new Server();
-		
-=======
 		Registry registry;	
 		Server server;		
->>>>>>> upstream/master
 		try{
 			server = new Server();
 			port = 1099;
 			registry = LocateRegistry.createRegistry(port);
 			url ="//"+"localhost"+":"+String.valueOf(port)+"/Server";
-			System.out.println(url);
+			System.out.println("URL du serveur : "+url);
 			Naming.bind(url,server);
+			System.out.println("Server is now running ...");
+
 		}catch(Exception e){
 			System.out.println("Fail to initialize Server");
 			e.printStackTrace();
