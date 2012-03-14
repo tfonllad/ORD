@@ -6,19 +6,26 @@ import java.rmi.registry.*;
 import java.rmi.*;
 import java.net.*;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
 
 public class Server extends UnicastRemoteObject implements Server_itf{
 
 	private HashMap<String,Integer> hmName; 
 	private HashMap<Integer,ServerObject> hmID;
 	private static int cpt; 				//generation of id
-	
+	private ReentrantLock mutex;
+	private Condition creation;
+	private boolean creating;
+
 	public Server() throws RemoteException{
 		super();
 		this.hmName = new HashMap<String,Integer>();
 		this.hmID = new HashMap<Integer,ServerObject>();
 		this.cpt = 0;
+		this.mutex = new ReentrantLock();
 	}
+
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
 		ServerObject so = this.hmID.get(id);
 		so.lock_read(client);
@@ -76,6 +83,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 			 	/* lancer une exception rmi ou  ne rien faire */
 				System.out.println("Le server possède déjà lenom");
 			}
+			this.mutex.unlock();
 	}
 
 	/** Method create : create Server Object, add it to hmID and return ID
@@ -84,6 +92,8 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	* @throws RemoteException
 	**/
 	public int create(Object o) throws java.rmi.RemoteException{
+		System.out.println("Create");
+		this.mutex.lock();
 		cpt = cpt+1;
 		ServerObject so = new ServerObject(cpt,o);
 		this.hmID.put(cpt,so);
