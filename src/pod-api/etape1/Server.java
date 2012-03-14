@@ -92,7 +92,6 @@ public class Server implements Server_itf{
 		String url;
 		Registry registry;
 		cpt = 0;
-		Integer I = new Integer(args[0]);
 		Server_itf server = new Server();
 		
 		try{

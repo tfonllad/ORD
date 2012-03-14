@@ -6,8 +6,6 @@ import java.util.HashMap;
 
 public class Client extends UnicastRemoteObject implements Client_itf {
 	
-	// Vérifier qu'on a le droit de rajouter un attribut. Je suis pas
-	// certain des consignes -> OK tant qu'ils sont en privé et qu'on change pas l'interface
 	
 	private static HashMap<Integer,SharedObject> hmID;
 	private static Server_itf server;
@@ -50,6 +48,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		
 		try{
 			id = server.lookup(name);
+			
 			if(hmID.containsKey(id)){
 			 	so = hmID.get(id);
 			}else{
