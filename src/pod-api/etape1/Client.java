@@ -1,8 +1,10 @@
 import java.rmi.*;
-import java.rmi.server.UnicastRemoteObject;
+import java.rmi.servernicastRemoteObject;
 import java.rmi.registry.*;
 import java.net.*;
 import java.util.HashMap;
+import java.lang.*;
+
 public class Client extends UnicastRemoteObject implements Client_itf {
 	
 	// Vérifier qu'on a le droit de rajouter un attribut. Je suis pas
