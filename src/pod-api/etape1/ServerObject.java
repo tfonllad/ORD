@@ -3,6 +3,9 @@
 import java.util.ArrayList;
 import java.util.concurrent.locks.*;
 import java.rmi.*;
+import java.util.AbstractCollection;
+import java.util.AbstractList;
+
 public class ServerObject{
 
 	//identification	
@@ -31,7 +34,8 @@ public class ServerObject{
 		this.id = id;	
 		this.obj = o;
 		this.lock = new ReentrantLock();
-		this.readerList = new ArrayList<Client_itf>();
+                List list = Collections.synchronizedList(new ArrayList<Client_itf>());
+                this.readerList = list;
 	}
 
 	public int getID(){
@@ -47,6 +51,7 @@ public class ServerObject{
 		if(lockState==State.WL){
 			try{
 				obj = writer.reduce_lock(this.id);
+                                
 				this.readerList.add(this.writer);
 				writer = null;
 			}catch(RemoteException r){
