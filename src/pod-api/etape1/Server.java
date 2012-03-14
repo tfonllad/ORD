@@ -27,8 +27,10 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	}
 
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
+		System.out.println("Propagation de lock_read");
 		ServerObject so = this.hmID.get(id);
 		so.lock_read(client);
+		System.out.println("Fin de lock_read");
 		return so.obj;
 	}
 
@@ -36,6 +38,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		System.out.println("Propagation de lock_write");
 		ServerObject so = this.hmID.get(id);
 		so.lock_write(client);
+		System.out.println("Fin du lock_write");
 		return so.obj;
 	}
 
@@ -81,7 +84,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 				this.hmName.put(name,id);
 			}else{ 	/* name already bound to another object */
 			 	/* lancer une exception rmi ou  ne rien faire */
-				System.out.println("Le server possède déjà lenom");
+				System.out.println("Le server a déjà le nom");
 			}
 			this.mutex.unlock();
 	}
@@ -115,8 +118,8 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 			System.out.println(url);
 			Naming.bind(url,server);
 		}catch(Exception e){
-			System.out.println("Fail to initialize Server");
-			e.printStackTrace();
+			System.out.println("Failed to initialize Server");
+			System.exit(0);
 		}				
 	}
 }

@@ -33,20 +33,20 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	// invoked by the user program on the client node
 	public void lock_read() {
+		
 		switch(this.lockState){
 			case RLC :
-				System.out.println("Pre : RLC");
+				System.out.println("OBTAINED from cache");
 				this.lockState=State.RLT;
-				System.out.println("Post:RLT");
 			break;
 			case WLC:
-				System.out.println("Pre : WLC");
+				System.out.println("OBTAINED from cache");
 				this.lockState=State.RLT_WLC;
-				System.out.println("Post : RLT_WCL");
 			break;
-			default:
+			default:System.out.println("REQUEST lock_read");
 				this.obj = client.lock_read(this.id);
 				this.lockState=State.RLT;
+				System.out.println("OBTAINED lock_read");
 			break;					
 		}
 		
@@ -54,22 +54,21 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	// invoked by the user program on the client node
 	public void lock_write() {
+		
 		switch(this.lockState){
 			case WLC:
-				System.out.println("Pre : WLC");	
+				System.out.println("OBTAINED from cache");	
 				this.lockState=State.WLT;
-				System.out.println("Post : WLT");	
 			break;
 			default: 
-				if(this.waitingWriter==0){
-					System.out.println("client.lock_write");	
+				System.out.println("REQUEST lock_write");
+				if(this.waitingWriter==0){	
 					this.obj =  client.lock_write(this.id);
-					System.out.println("Client done lock_write");
 					this.lockState=State.WLT;
-					System.out.println("Post = WLT");
+					System.out.println("OBTAINED lock_write");
 				}else{
 					this.lockState=State.NL;
-					System.out.println("State = NL");
+					System.out.println("Je laisse la place");
 	 				this.available.signal();
 					this.lock_write();
 				}
@@ -83,14 +82,11 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		switch(this.lockState){
 			case RLT:
 			lockState = State.RLC;
-			System.out.println("unlock = RLC");
 			break;
 			case WLT:
 			lockState = State.WLC;
-			System.out.println("unlock = WLC");
 			case RLT_WLC:
 			lockState = State.WLC;
-			System.out.println("State = WLC");
 		}
 		this.available.signal();	
 		this.lock.unlock();
@@ -98,15 +94,12 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	// callback invoked remotely by the server
 	public synchronized Object reduce_lock() {
-		System.out.println("Propagationde reduce_lock : SharedObject");
 		this.lock.lock();
-		System.out.println("le SharedObject est donc locked");
+		System.out.println("demande de reduce_lock()");
 		if(this.lockState==State.WLT){
 			while(this.lockState==State.WLT){
 				try{
-					System.out.println("await reduce_lock");
 					this.available.await();
-					System.out.println("lock réduit");
 				}catch(InterruptedException i){}
 			}
 			this.lockState=State.RLC;
@@ -117,38 +110,39 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		if(this.lockState==State.WLC){
 			this.lockState=State.RLC;
 		}
+		System.out.println("fin de reduce_lock");
 		this.lock.unlock();
-		System.out.println("Le SharedObject n'est plus locked");
 		return obj;
 	}
 
 	// callback invoked remotely by the server
 	public synchronized void invalidate_reader() {
 		this.lock.lock();
+		System.out.println("demande invalidate_reader");
 		while(this.lockState==State.RLT){
 			try{
 				this.waitingWriter+=1;
-				System.out.println("ReaderAwait");
+				System.out.println("Write++");
 				this.available.await();
-				System.out.println("reader invalidé");
+				System.out.println("Writer--");
 				this.waitingWriter-=1;
 			}catch(InterruptedException r){}
 		}
 		this.lockState=State.NL;
+		System.out.println("fin d'invalidate_reader");
 		this.lock.unlock();
 	}
 
 	public synchronized Object invalidate_writer() {
 		this.lock.lock();
-		System.out.println("Shared : IW");	
+		System.out.println("fin d'invalidate_write");
 		while(this.lockState==State.WLT){
 			try{
-				System.out.println("await");
 				this.available.await();
-				System.out.println("writer Invalidé");
 			}catch(InterruptedException t){}
 		}
 		this.lockState=State.NL;
+		System.out.println("fin d'invalidate_reader");
 		this.lock.unlock();	
 		return obj;
 				

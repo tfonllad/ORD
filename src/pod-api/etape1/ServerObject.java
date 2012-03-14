@@ -47,11 +47,13 @@ public class ServerObject{
 				this.readerList.add(this.writer);
 				writer = null;
 			}catch(RemoteException r){
-				r.printStackTrace();
+				System.out.println("Ecrivain perdu");
 			}finally{
 		 		writer=null;
 			}	
 			this.readerList.add(c);		
+			System.out.println("Client"+c.toString()+"retiré");
+
 		}
 		this.readerList.add(c);
 		lockState=State.RL;
@@ -72,6 +74,7 @@ public class ServerObject{
 				try{
 					cli.invalidate_reader(this.id);		
 					this.readerList.remove(cli);
+					System.out.println("Client"+cli.toString()+"retiré");
 				}catch(RemoteException r){
 					r.printStackTrace();
 				}
