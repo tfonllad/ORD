@@ -1,13 +1,15 @@
 /**@version etape1
 **/
 import java.util.ArrayList;
-import java.util.concurrent.locks.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.rmi.*;
+import java.util.List;
+
 public class ServerObject{
 
 	//identification	
 	private int id;
-	private ArrayList<Client_itf> readerList; 
+	private List<Client_itf> readerList; 
 	private Client_itf writer;	
 	public Object obj;		
 	
@@ -19,10 +21,7 @@ public class ServerObject{
 		WL;	
 	}
 	
-	//Consistency
-	private ReentrantLock lock;
-
-	/** Constructor ServerObject
+	/**Constructor ServerObject
 	*@param id : the unique id.
 	*@param o : cached object. Used for lookup and reader without writer
 	*invalidation
@@ -30,8 +29,7 @@ public class ServerObject{
 	public ServerObject(int id,Object o){
 		this.id = id;	
 		this.obj = o;
-		this.lock = new ReentrantLock();
-		this.readerList = new ArrayList<Client_itf>();
+		this.readerList = new CopyOnWriteArrayList();
 	}
 
 	public int getID(){
@@ -43,7 +41,6 @@ public class ServerObject{
 	* @return o : up-to-date object
 	**/
 	public synchronized void lock_read(Client_itf c){
-		this.lock.lock();
 		if(lockState==State.WL){
 			try{
 				obj = writer.reduce_lock(this.id);
@@ -58,17 +55,15 @@ public class ServerObject{
 		}
 		this.readerList.add(c);
 		lockState=State.RL;
-		this.lock.unlock();
 	}	
 	/**Method lock_writer : similar to lock_write, invalidate both writer
  	* and readers.
 	* @return obj : up-to-date object
 	**/
 	public synchronized void lock_write(Client_itf c){
-		this.lock.lock();
 		if(lockState==State.WL||this.readerList.size()!=0){	
 			if(writer!=null){
-				try{
+				try{	
 					obj = writer.invalidate_writer(this.id);
 					writer = null;
 				}catch(RemoteException r){}
@@ -84,10 +79,9 @@ public class ServerObject{
 		}
 		try{
 			this.readerList.remove(c);
-		}catch(Exception e){}
+		}catch(Exception e){}	
 		this.writer = c;
 		this.lockState = State.WL;
 		writer = c;
-		this.lock.unlock();
 	}
 }
