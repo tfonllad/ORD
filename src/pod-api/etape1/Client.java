@@ -1,5 +1,6 @@
 import java.rmi.*;
-import java.rmi.servernicastRemoteObject;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.*;
 import java.net.*;
 import java.util.HashMap;

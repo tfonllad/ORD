@@ -104,8 +104,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		if(this.lockState==State.WLT){
 			while(this.lockState==State.WLT){
 				try{
-					System.out.println("await");
+					System.out.println("await reduce_lock");
 					this.available.await();
+					System.out.println("lock réduit");
 				}catch(InterruptedException i){}
 			}
 			this.lockState=State.RLC;
@@ -129,6 +130,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 				this.waitingWriter+=1;
 				System.out.println("ReaderAwait");
 				this.available.await();
+				System.out.println("reader invalidé");
 				this.waitingWriter-=1;
 			}catch(InterruptedException r){}
 		}
@@ -143,6 +145,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			try{
 				System.out.println("await");
 				this.available.await();
+				System.out.println("writer Invalidé");
 			}catch(InterruptedException t){}
 		}
 		this.lockState=State.NL;
