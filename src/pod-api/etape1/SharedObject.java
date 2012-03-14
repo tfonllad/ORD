@@ -35,10 +35,14 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public void lock_read() {
 		switch(this.lockState){
 			case RLC :
+				System.out.println("Pre : RLC");
 				this.lockState=State.RLT;
+				System.out.println("Post:RLT");
 			break;
 			case WLC:
+				System.out.println("Pre : WLC");
 				this.lockState=State.RLT_WLC;
+				System.out.println("Post : RLT_WCL");
 			break;
 			default:
 				this.obj = client.lock_read(this.id);
@@ -51,18 +55,21 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// invoked by the user program on the client node
 	public void lock_write() {
 		switch(this.lockState){
-		
 			case WLC:
-				client.lock_write(this.id);
+				System.out.println("Pre : WLC");	
 				this.lockState=State.WLT;
-			
+				System.out.println("Post : WLT");	
 			break;
 			default: 
 				if(this.waitingWriter==0){
+					System.out.println("client.lock_write");	
 					this.obj =  client.lock_write(this.id);
+					System.out.println("Client done lock_write");
 					this.lockState=State.WLT;
+					System.out.println("Post = WLT");
 				}else{
 					this.lockState=State.NL;
+					System.out.println("State = NL");
 	 				this.available.signal();
 					this.lock_write();
 				}
@@ -70,36 +77,36 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		}
 	}
 
-	public synchronized void lock(){
-		this.lock.lock();
-	}
-	public synchronized void unlockLock(){
-		this.lock.unlock();
-	}
-	
-
 	// invoked by the user program on the client node
-	public synchronized void unlock() {
+	public void unlock() {
+		this.lock.lock();
 		switch(this.lockState){
 			case RLT:
 			lockState = State.RLC;
+			System.out.println("unlock = RLC");
 			break;
 			case WLT:
 			lockState = State.WLC;
+			System.out.println("unlock = WLC");
 			case RLT_WLC:
 			lockState = State.WLC;
+			System.out.println("State = WLC");
 		}
-		this.available.signal();
+		this.available.signal();	
+		this.lock.unlock();
 	}
 
 	// callback invoked remotely by the server
 	public synchronized Object reduce_lock() {
+		System.out.println("Propagationde reduce_lock : SharedObject");
 		this.lock.lock();
+		System.out.println("le SharedObject est donc locked");
 		if(this.lockState==State.WLT){
 			while(this.lockState==State.WLT){
 				try{
+					System.out.println("await");
 					this.available.await();
-				}catch(InterruptedException e){}
+				}catch(InterruptedException i){}
 			}
 			this.lockState=State.RLC;
 		}
@@ -110,6 +117,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			this.lockState=State.RLC;
 		}
 		this.lock.unlock();
+		System.out.println("Le SharedObject n'est plus locked");
 		return obj;
 	}
 
@@ -119,23 +127,26 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		while(this.lockState==State.RLT){
 			try{
 				this.waitingWriter+=1;
+				System.out.println("ReaderAwait");
 				this.available.await();
 				this.waitingWriter-=1;
 			}catch(InterruptedException r){}
 		}
 		this.lockState=State.NL;
-		this.lock.lock();
+		this.lock.unlock();
 	}
 
 	public synchronized Object invalidate_writer() {
-		this.lock.lock();	
+		this.lock.lock();
+		System.out.println("Shared : IW");	
 		while(this.lockState==State.WLT){
 			try{
+				System.out.println("await");
 				this.available.await();
 			}catch(InterruptedException t){}
 		}
 		this.lockState=State.NL;
-		this.unlock();	
+		this.lock.unlock();	
 		return obj;
 				
 	}

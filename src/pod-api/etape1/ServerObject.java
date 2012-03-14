@@ -31,71 +31,20 @@ public class ServerObject{
 		this.id = id;	
 		this.obj = o;
 		this.lock = new ReentrantLock();
-	}
-	public synchronized void lock(){
-		this.lock.lock();
-	}
-	public synchronized void unlock(){
-		this.lock.unlock();
-	}
-	/** Methode updateLock is called after waiting process get out the await
- 	* loop.
-	* @param verrou
-	* @return void
-	**/
-	public void updateLock(State verrou){
-		switch(verrou){
-			case NL:
-				this.lockState = State.NL;
-			break;
-			case RL:
-				this.lockState = State.RL;
-			break;
-			case WL:
-				this.lockState = State.WL;
-			break;
-		}
+		this.readerList = new ArrayList<Client_itf>();
 	}
 
 	public int getID(){
 		return this.id;
 	}
 
-	/** method invalidate_write: used to get the last up-to-date object
-	 *from a writer once he unlocked it. If they are no current writer, return the
- 	 *cached object. Also set writer to null;
-	 *@return obj 
-	 **/
-	public Object invalidate_writer(){
-		Client c;
-		if(writer!=null){
-			try{
-				obj = writer.invalidate_writer(this.id);
-				writer = null;
-			}catch(RemoteException r){
-			}
-		}
-		return obj;
-	}
-	
-	/** Method invalidate_reader : used to wait for reader to unlock.
+	/**Method lock_read : called by client to get lock on the object.The
+ 	* method call reduce_lock on the writer if not null
+	* @return o : up-to-date object
 	**/
-	public void invalidate_reader(){
-		for(Client_itf cli : readerList){
-			try{
-				cli.invalidate_reader(this.id);		
-				this.readerList.remove(cli);
-			}catch(RemoteException r){
-				r.printStackTrace();
-			}
-		}
-	}	
-	/**Method reduce_lock : similar to invalidate_writer except the writer
-	 * becomes a reader
-         *@return o : up-to-date object
-	**/
-	public Object reduce_lock(){
-		if(writer!=null){
+	public synchronized void lock_read(Client_itf c){
+		this.lock.lock();
+		if(lockState==State.WL){
 			try{
 				obj = writer.reduce_lock(this.id);
 				this.readerList.add(this.writer);
@@ -103,44 +52,42 @@ public class ServerObject{
 			}catch(RemoteException r){
 				r.printStackTrace();
 			}finally{
-			 	writer=null; //Si on perd la connexion vers
-					//l'écrivain, on le dégage et on renvoit le dernier objet du cache
-			}
-		}
-	return obj;	
-	}
-	
-	/**Method lock_read : called by client to get lock on the object.The
- 	* method call reduce_lock on the writer if not null
-	* @return o : up-to-date object
-	**/
-	public Object lock_read(Client_itf c){
-		while(lockState==State.WL){
-			obj = this.reduce_lock();
-			this.readerList.add(c);
+		 		writer=null;
+			}	
+			this.readerList.add(c);		
 		}
 		this.readerList.add(c);
 		lockState=State.RL;
-		return obj;
+		this.lock.unlock();
 	}	
 	/**Method lock_writer : similar to lock_write, invalidate both writer
  	* and readers.
 	* @return obj : up-to-date object
 	**/
-	public Object lock_write(Client_itf c){
-		while(lockState==State.WL||this.readerList.size()!=0){
-				obj = this.invalidate_writer();	
-				this.invalidate_reader();
+	public synchronized void lock_write(Client_itf c){
+		this.lock.lock();
+		if(lockState==State.WL||this.readerList.size()!=0){	
+			if(writer!=null){
+				try{
+					obj = writer.invalidate_writer(this.id);
+					writer = null;
+				}catch(RemoteException r){}
+			}
+			for(Client_itf cli : readerList){
+				try{
+					cli.invalidate_reader(this.id);		
+					this.readerList.remove(cli);
+				}catch(RemoteException r){
+					r.printStackTrace();
+				}
+			}
 		}
 		try{
 			this.readerList.remove(c);
-		}catch(Exception e){
-		//none
-		}
+		}catch(Exception e){}
 		this.writer = c;
 		this.lockState = State.WL;
 		writer = c;
-
-		return obj;
+		this.lock.unlock();
 	}
 }
