@@ -1,6 +1,8 @@
 import java.io.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class SharedObject implements Serializable, SharedObject_itf {
 	
@@ -10,150 +12,161 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	private ReentrantLock lock;
 	private Condition available;
 	private Client client;
-	private Condition nI;
-	private boolean ini;
-	private int waintingWriter;
+	private int waitingWriter;
+	private static Logger logger;
 
-	public boolean isINI(){
-		return this.ini;
-	}
-	public void setINI(){	
-		this.ini = true;
-	}
-	public enum State{	
-		NL,
-		RLT,
-		WLT,
-		RLC,
-		WLC,
-		RLT_WLC;
-	}
 
 	public SharedObject(int id,Object object,Client c){
 		this.id = id;
 		this.obj = object;
-		this.lockState = NI;
-	this.client = c;
+		this.lockState = State.NL;
+		this.client = c;
+		this.waitingWriter = 0;
 		this.lock = new ReentrantLock();
-		this.nI = this.lock.newCondition();
 		this.available = this.lock.newCondition();
+		//logger = Logger.getLogger("SharedObject");
+		//logger.setLevel(Level.INFO);
+
+	}
+	public State getState(){
+		return this.lockState;
 	}
 
-	public synchronized void signalINI(){
-		this.nI.signal();
-	}
-	
-	public synchronized void awaitINI() throws InterruptedException{
-		this.nI.await();
-	}
 	// invoked by the user program on the client node
 	public void lock_read() {
+	
 		switch(this.lockState){
 			case RLC :
-				this.updateLock(RLT);	
+				this.lockState=State.RLT;
+				//logger.log(Level.INFO,"lock updated : RLT");
 			break;
 			case WLC:
-				this.updateLock(RLT_WLC);
+				this.lockState=State.RLT_WLC;
+				//logger.log(Level.INFO,"lock updated : RLT_WLC");
 			break;
 			default:
+				//logger.log(Level.INFO,"lock_read request to client");
 				this.obj = client.lock_read(this.id);
-				this.lockState=RLT;
+				this.lockState=State.RLT;
+				//logger.log(Level.INFO,"lock_read acquired");
+				//logger.log(Level.INFO,"lock_updated : RLT");
 			break;					
 		}
-		
+
 	}
 
 	// invoked by the user program on the client node
 	public void lock_write() {
+	
 		switch(this.lockState){
 		
 			case WLC:
-				client.lock_write(this.id);
-				this.lockState=WLT;
-			
+				this.lockState=State.WLT;	
+				//logger.log(Level.INFO,"lock updated : WLT");
 			break;
+			case RLT_WLC:
+				this.lockState=State.WLT;
+				//logger.log(Level.INFO,"lock updated : WLT");
+			break;
+		
 			default: 
-				if(this.waitingWriter==0){
+				if(this.waitingWriter==0){	
+					//logger.log(Level.INFO,"request lock_write");
 					this.obj =  client.lock_write(this.id);
-					this.lockState=WLT;
+					this.lockState=State.WLT;
+					//logger.log(Level.INFO,"lock_write acquired");
+				//logger.log(Level.INFO,"lock_updated : RLT");
 				}else{
-					this.lockState=NL;
+					this.lockState=State.NL;
+					//logger.log(Level.INFO,"update lock NL");
 	 				this.available.signal();
+					//logger.log(Level.INFO,"let writer go, request again");
 					this.lock_write();
 				}
 			break;
 		}
-	}
-
-	public synchronized void lock(){
-		this.lock.lock();
-	}
-	public synchronized void unlockLock(){
-		this.lock.unlock();
-	}
 	
+	}
 
 	// invoked by the user program on the client node
-	public synchronized void unlock() {
+	public void unlock() {
+		this.lock.lock();
 		switch(this.lockState){
 			case RLT:
-			lockState = RLC;
+			lockState = State.RLC;
+			//logger.log(Level.INFO,"unlock : RLC");
 			break;
 			case WLT:
-			lockState = WLC;
+			lockState = State.WLC;
+			//logger.log(Level.INFO,"unlock : WLC");
 			case RLT_WLC:
-			lockState = WLC;
+			lockState = State.WLC;
+			//logger.log(Level.INFO,"unlock : WLC");
 		}
 		this.available.signal();
+		//logger.log(Level.INFO,"unlock : signal");	
+		this.lock.unlock();
 	}
 
 	// callback invoked remotely by the server
-	public synchronized Object reduce_lock() {
+	public Object reduce_lock() {
 		this.lock.lock();
-		if(this.lockState==WLT){
-			while(this.lockState==WLT){
-				this.available.await();
+		if(this.lockState==State.WLT){
+			while(this.lockState==State.WLT){
+				try{
+				//	logger.log(Level.INFO,"await on writer");
+					this.available.await();
+					//logger.log(Level.INFO,"writer was released");
+				}catch(InterruptedException i){}
 			}
-			this.lockState=RLC;
+			this.lockState=State.RLC;
 		}
-		if(this.lockState==RLT_WLC){
-			this.lockState=RLT;
+		if(this.lockState==State.RLT_WLC){
+			this.lockState=State.RLT;
 		}
-		if(this.lockState==WLC){
-			this.lockState=RLC;
+		if(this.lockState==State.WLC){
+			this.lockState=State.RLC;
 		}
+		//logger.log(Level.INFO,"lock reduced, lockstate = "+this.lockState.toString());
 		this.lock.unlock();
 		return obj;
 	}
 
 	// callback invoked remotely by the server
-	public synchronized void invalidate_reader() {
+	public void invalidate_reader() {
 		this.lock.lock();
-		while(this.lockState==RLT){
+		while(this.lockState==State.RLT){
 			try{
 				this.waitingWriter+=1;
+			//	logger.log(Level.INFO,"await on reader");
 				this.available.await();
+		//		logger.log(Level.INFO,"reader was released");
 				this.waitingWriter-=1;
 			}catch(InterruptedException r){}
 		}
-		this.updateLock(NL);
-		this.lock.lock();
+		this.lockState=State.NL;
+	//	logger.log(Level.INFO,"reader invalidated, lockState NL="+this.lockState.toString() );
+		this.lock.unlock();
 	}
 
-	public synchronized Object invalidate_writer() {
-		this.lock.lock();	
-		while(this.lockState==WLT){
+	public Object invalidate_writer() {
+		this.lock.lock();
+		while(this.lockState==State.WLT||this.lockState==State.RLT_WLC){
 			try{
-				this.available.await();
+	//		logger.log(Level.INFO,"await on writer");
+			this.available.await();
+//			logger.log(Level.INFO,"writer was released");
 			}catch(InterruptedException t){}
 		}
-		this.lockState=NL;
-		this.unlock();	
+		this.lockState=State.NL;
+//		logger.log(Level.INFO,"writer invalidated, lockState NL="+this.lockState.toString() );
+		this.lock.unlock();	
 		return obj;
 				
 	}
-
-	public int getID(){
-		return id;
+	public int getID() {
+		// TODO Auto-generated method stub
+		return this.id;
 	}
+
 }

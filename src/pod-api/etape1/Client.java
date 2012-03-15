@@ -151,26 +151,29 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 =======
 import java.rmi.*;
+import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.*;
 import java.net.*;
 import java.util.HashMap;
+import java.lang.*;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class Client extends UnicastRemoteObject implements Client_itf {
 	
-	// Vérifier qu'on a le droit de rajouter un attribut. Je suis pas
-	// certain des consignes -> OK tant qu'ils sont en privé et qu'on change pas l'interface
 	
-	private static HashMap<Integer,SharedObject> localHMID;
+	private static HashMap<Integer,SharedObject> hmID;
 	private static Server_itf server;
 	private static Client_itf client;	
-	
+	private static Logger logger;	
+
 	public Client() throws RemoteException {
 		super();
 	}
 
 	public static Object getObject(int id){
-		return localHMID.get(id).obj;
+		return hmID.get(id).obj;
 	}
 	
 ///////////////////////////////////////////////////
@@ -179,14 +182,17 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// initialization of the client layer -> OK
 	public static void init() {
-		localHMID = new HashMap<Integer,SharedObject>();
+		logger = Logger.getLogger("Client");
+		logger.setLevel(Level.INFO);
+		hmID = new HashMap<Integer,SharedObject>();
 		try{  	
 			client = new Client();	
 			int port = 1099; 
-			server = (Server_itf) Naming.lookup("//"+InetAddress.getLocalHost().getHostName()+":"+port+"/Server");
+			server = (Server_itf)Naming.lookup("//"+"localhost"+":"+String.valueOf(port)+"/Server");
+			logger.log(Level.FINE,"Server found");
 		}catch(Exception e){
-			System.out.println("Failed to connect to the Server");
-			e.printStackTrace();
+			logger.log(Level.SEVERE,"Server not found");
+			System.exit(0);
 		}	
 	}
 
@@ -198,31 +204,41 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 	public static SharedObject lookup(String name){
 		int id;
-		SharedObject so;
+		SharedObject so=null;
 		
 		try{
+			System.out.println("Appel server.lookup()");
 			id = server.lookup(name);
-			if(localHMID.contains(id)){
-			 	so = localHMID.get(id);
+			
+			if(hmID.containsKey(id)){
+			 	so = hmID.get(id);
 			}else{
-				so = new SharedObject(id,server.getObj(id),client);
-				localHMID.put(id,so);
+				logger.log(Level.FINE,"lookup");
+				id = server.lookup(name);
+				if(id==0){
+					so = null;
+				}else{
+					so = new SharedObject(id,null,(Client)client);
+					hmID.put(id,so);
+				}
 			}
 		}catch(RemoteException r){
-		}finally{
-			so = new SharedObject(id,null,client);
-		}			
+			logger.log(Level.SEVERE,"Connexion Lost");
+			System.exit(0);
+		}	
 		return so;
 	}		
 	
 	// binding in the name server
 	public static void register(String name, SharedObject_itf so) {
-		//Enregistrement local		
+		//Enregistrement local	}
 		int id =((SharedObject) so).getID();
+		System.out.println(id);
 		try{
 			server.register(name,id);
 		}catch(RemoteException r){
-			r.printStackTrace();
+			logger.log(Level.SEVERE,"Connexion Lost");
+			System.exit(0);
 		}
 	}
 
@@ -233,19 +249,17 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	* @return so : local representation of the object.
 	*/
 	public static SharedObject create(Object o) {
-		int id;
-		SharedObject so;
+		int id = -1;
+		SharedObject so = null;
 
-		try{			
+		try{		
 			id = server.create(o);		
-			server.initialize(id,client);
-			so = new SharedObject(id,o);
-			localHMID.put(id,so);
-	
+			so = new SharedObject(id,o,(Client)client);
+			hmID.put(id,so);
+				
 	 	}catch(RemoteException r){
-			r.printStackTrace();
-		}finally{
-			so=null;
+			logger.log(Level.SEVERE,"Connexion Lost");
+			System.exit(0);
 		}
 		return so;		
 		
@@ -261,14 +275,15 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	/*@return o : up-to-date object retrived from the serer
 	**/
 	public static Object lock_read(int id) {
-		Object o;
+		Object o = null;
+		logger.log(Level.INFO,"request lock_read");
 		try{
 			o = server.lock_read(id,client);
 		}catch(RemoteException r){
-			r.printStackTrace();
-		}finally{
-			o = null;
+			logger.log(Level.SEVERE,"Connexion Lost");
+			System.exit(0);
 		}
+		logger.log(Level.INFO,"obtained lock_read");
 		return o;	
 	}
 
@@ -277,14 +292,15 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	*@return o : up-to-date object retrived from the serer
 	**/
 	public static Object lock_write(int id) {
-		Object o;
+		Object o = null;
+		logger.log(Level.INFO,"request lock_write");
 		try{
 			o = server.lock_write(id,client);
 		}catch(RemoteException r){
-			r.printStackTrace();
-		}finally{
-			o = null;
+			logger.log(Level.SEVERE,"Connexion Lost");
+			System.exit(0);
 		}
+		logger.log(Level.INFO,"obtained lock_write");
 		return o;
 	}
 
@@ -297,9 +313,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public Object reduce_lock(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
 		Object o;
-		so.lock();
-		o = so.reduce_lock();	//objet inchangé	
-		so.unlockLock();
+		logger.log(Level.INFO,"recieved reduce_lock");
+		o = so.reduce_lock();
+		logger.log(Level.INFO,"lock was reduced");
 		return o;
 	}
 
@@ -309,9 +325,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 	public void invalidate_reader(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
-		so.lock();
+		logger.log(Level.INFO,"recieved invalidate_reader");
 		so.invalidate_reader();
-		so.unlockLock();
+		logger.log(Level.INFO,"reader was invalidated");
 	}
 
 	// receive a writer invalidation request from the server
@@ -322,9 +338,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public Object invalidate_writer(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
 		Object o;
-		so.lock();
+		logger.log(Level.INFO,"recieved invalidate_writer");
 		o = so.invalidate_writer();
-		so.unlockLock();
+		logger.log(Level.INFO,"writer was invalidated");
 		return o;
 	}	
 }
