@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.rmi.*;
 import java.util.List;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
 
 public class ServerObject{
 
@@ -12,7 +15,7 @@ public class ServerObject{
 	private List<Client_itf> readerList; 
 	private Client_itf writer;	
 	public Object obj;		
-	
+	private static Logger logger;	
 	//State
 	private State lockState;
 	public enum State{
@@ -30,6 +33,7 @@ public class ServerObject{
 		this.id = id;	
 		this.obj = o;
 		this.readerList = new CopyOnWriteArrayList();
+		logger = new Logger();
 	}
 
 	public int getID(){
@@ -47,13 +51,13 @@ public class ServerObject{
 				this.readerList.add(this.writer);
 				writer = null;
 			}catch(RemoteException r){
-				System.out.println("Ecrivain perdu");
+				logger.log(WARNING,"Writer was lost");
 			}finally{
 		 		writer=null;
 			}	
 			this.readerList.add(c);		
-			System.out.println("Client"+c.toString()+"retiré");
-
+			logger.log(INFO,"Client"+c.toString()+"was removed");
+		
 		}
 		this.readerList.add(c);
 		lockState=State.RL;
@@ -68,21 +72,26 @@ public class ServerObject{
 				try{	
 					obj = writer.invalidate_writer(this.id);
 					writer = null;
-				}catch(RemoteException r){}
+				}catch(RemoteException r){
+					logger.log(WARNING,"Writer was lost");
+				}
 			}
 			for(Client_itf cli : readerList){
 				try{
 					cli.invalidate_reader(this.id);		
 					this.readerList.remove(cli);
-					System.out.println("Client"+cli.toString()+"retiré");
+					logger.log(INGO,"Client"+cli.toString()+"retiré");
 				}catch(RemoteException r){
-					r.printStackTrace();
+					logger.log(WARNING,"Reader was lost");
+
 				}
 			}
 		}
 		try{
 			this.readerList.remove(c);
-		}catch(Exception e){}	
+		}catch(Exception e){
+			logger.log(INFO,"List was empty. Whatever");	
+		}	
 		this.writer = c;
 		this.lockState = State.WL;
 		writer = c;
