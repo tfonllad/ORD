@@ -33,7 +33,11 @@ public class ServerObject{
 	public int getID(){
 		return this.id;
 	}
-
+	public enum State{
+		NL,
+		WL,
+		RL;
+	}
 	/**Method lock_read : called by client to get lock on the object.The
  	* method call reduce_lock on the writer if not null
 	* @return o : up-to-date object
