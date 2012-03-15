@@ -28,22 +28,23 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		this.hmID = new HashMap<Integer,ServerObject>();
 		this.cpt = 0;
 		this.mutex = new ReentrantLock();
-		logger = new Logger();
+		logger = Logger.getLogger("Server");
+		logger.setLevel(Level.INFO);
 	}
 
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
-		logger.log(FINE,"propagation lock_read");
+		logger.log(Level.FINE,"propagation lock_read");
 		ServerObject so = this.hmID.get(id);
 		so.lock_read(client);
-		logger.log(FINE,"fin propagation lock_read");
+		logger.log(Level.FINE,"fin propagation lock_read");
 		return so.obj;
 	}
 
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
-		logger.log(FINE,"propagation lock_write");
+		logger.log(Level.FINE,"propagation lock_write");
 		ServerObject so = this.hmID.get(id);
 		so.lock_write(client);
-		logger.log(FINE,"fin propagation lock_write");
+		logger.log(Level.FINE,"fin propagation lock_write");
 		return so.obj;
 	}
 
@@ -67,10 +68,10 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		int id;
 		System.out.println("lookup");
 		if(!this.hmName.containsKey(name)){
-			logger.log(WARNING,"Name not found");
+			logger.log(Level.WARNING,"Name not found");
 			id = 0;
 		}else{
-			logger.log(INFO,"Name found");	
+			logger.log(Level.INFO,"Name found");	
 			id = this.hmName.get(name);
 		}
 		return id;		
@@ -88,7 +89,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 				this.hmName.put(name,id);
 			}else{ 	/* name already bound to another object */
 			 	/* lancer une exception rmi ou  ne rien faire */
-				logger.log(WARNING,"Name already registred");
+				logger.log(Level.WARNING,"Name already registred");
 			}
 			this.mutex.unlock();
 	}
@@ -103,7 +104,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		cpt = cpt+1;
 		ServerObject so = new ServerObject(cpt,o);
 		this.hmID.put(cpt,so);
-		logger.log(FINE,"Done creating objec. ID ="+cpt+".");
+		logger.log(Level.FINE,"Done creating objec. ID ="+cpt+".");
 		return cpt;
 	}
 
@@ -122,7 +123,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 			System.out.println(url);
 			Naming.bind(url,server);
 		}catch(Exception e){
-			logger.log(SEVERE,"Failed to initialize Server");
+			logger.log(Level.SEVERE,"Failed to initialize Server");
 			System.exit(0);
 		}				
 	}

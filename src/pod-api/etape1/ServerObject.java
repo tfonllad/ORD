@@ -33,7 +33,8 @@ public class ServerObject{
 		this.id = id;	
 		this.obj = o;
 		this.readerList = new CopyOnWriteArrayList();
-		logger = new Logger();
+		logger = Logger.getLogger("ServerObject");
+		logger.setLevel(Level.INFO);
 	}
 
 	public int getID(){
@@ -51,12 +52,12 @@ public class ServerObject{
 				this.readerList.add(this.writer);
 				writer = null;
 			}catch(RemoteException r){
-				logger.log(WARNING,"Writer was lost");
+				logger.log(Level.WARNING,"Writer was lost");
 			}finally{
 		 		writer=null;
 			}	
 			this.readerList.add(c);		
-			logger.log(INFO,"Client"+c.toString()+"was removed");
+			logger.log(Level.INFO,"Client"+c.toString()+"was removed");
 		
 		}
 		this.readerList.add(c);
@@ -73,16 +74,16 @@ public class ServerObject{
 					obj = writer.invalidate_writer(this.id);
 					writer = null;
 				}catch(RemoteException r){
-					logger.log(WARNING,"Writer was lost");
+					logger.log(Level.WARNING,"Writer was lost");
 				}
 			}
 			for(Client_itf cli : readerList){
 				try{
 					cli.invalidate_reader(this.id);		
 					this.readerList.remove(cli);
-					logger.log(INGO,"Client"+cli.toString()+"retiré");
+					logger.log(Level.INFO,"Client"+cli.toString()+"retiré");
 				}catch(RemoteException r){
-					logger.log(WARNING,"Reader was lost");
+					logger.log(Level.WARNING,"Reader was lost");
 
 				}
 			}
@@ -90,7 +91,7 @@ public class ServerObject{
 		try{
 			this.readerList.remove(c);
 		}catch(Exception e){
-			logger.log(INFO,"List was empty. Whatever");	
+			logger.log(Level.INFO,"List was empty. Whatever");	
 		}	
 		this.writer = c;
 		this.lockState = State.WL;

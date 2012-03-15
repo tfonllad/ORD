@@ -31,7 +31,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.waitingWriter = 0;
 		this.lock = new ReentrantLock();
 		this.available = this.lock.newCondition();
-		logger = new Logger();
+		logger = Logger.getLogger("SharedObject");
+		logger.setLevel(Level.INFO);
+
 	}
 
 	// invoked by the user program on the client node
@@ -39,18 +41,18 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		switch(this.lockState){
 			case RLC :
 				this.lockState=State.RLT;
-				logger.log(INFO,"lock updated : RLT");
+				logger.log(Level.INFO,"lock updated : RLT");
 			break;
 			case WLC:
 				this.lockState=State.RLT_WLC;
-				logger.log(INFO,"lock updated : RLT_WLC");
+				logger.log(Level.INFO,"lock updated : RLT_WLC");
 			break;
 			default:
-				logger.log(INFO,"lock_read request to client");
+				logger.log(Level.INFO,"lock_read request to client");
 				this.obj = client.lock_read(this.id);
 				this.lockState=State.RLT;
-				logger.log(INFO,"lock_read acquired");
-				logger.log(INFO,"lock_updated : RLT");
+				logger.log(Level.INFO,"lock_read acquired");
+				logger.log(Level.INFO,"lock_updated : RLT");
 			break;					
 		}
 		
@@ -62,20 +64,20 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		switch(this.lockState){
 			case WLC:
 				this.lockState=State.WLT;
-				logger.log(INFO,"lock updated : WLT");
+				logger.log(Level.INFO,"lock updated : WLT");
 			break;
 			default: 
 				if(this.waitingWriter==0){	
-					logger.log(INFO,"request lock_write");
+					logger.log(Level.INFO,"request lock_write");
 					this.obj =  client.lock_write(this.id);
 					this.lockState=State.WLT;
-					logger.log(INFO,"lock_write acquired");
-				logger.log(INFO,"lock_updated : RLT");
+					logger.log(Level.INFO,"lock_write acquired");
+				logger.log(Level.INFO,"lock_updated : RLT");
 				}else{
 					this.lockState=State.NL;
-					logger.log(INFO,"update lock NL");
+					logger.log(Level.INFO,"update lock NL");
 	 				this.available.signal();
-					logger.log(INFO,"let writer go, request again");
+					logger.log(Level.INFO,"let writer go, request again");
 					this.lock_write();
 				}
 			break;
@@ -88,17 +90,17 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		switch(this.lockState){
 			case RLT:
 			lockState = State.RLC;
-			logger.log(INFO,"unlock : RLC");
+			logger.log(Level.INFO,"unlock : RLC");
 			break;
 			case WLT:
 			lockState = State.WLC;
-			logger.log(INFO,"unlock : WLC");
+			logger.log(Level.INFO,"unlock : WLC");
 			case RLT_WLC:
 			lockState = State.WLC;
-			logger.log(INFO,"unlock : WLC");
+			logger.log(Level.INFO,"unlock : WLC");
 		}
 		this.available.signal();
-		logger.log(INFO,"unlock : signal");	
+		logger.log(Level.INFO,"unlock : signal");	
 		this.lock.unlock();
 	}
 
@@ -108,9 +110,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		if(this.lockState==State.WLT){
 			while(this.lockState==State.WLT){
 				try{
-					logger.log(INFO,"await on writer");
+					logger.log(Level.INFO,"await on writer");
 					this.available.await();
-					logger.log(INFO,"writer was released");
+					logger.log(Level.INFO,"writer was released");
 				}catch(InterruptedException i){}
 			}
 			this.lockState=State.RLC;
@@ -121,7 +123,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		if(this.lockState==State.WLC){
 			this.lockState=State.RLC;
 		}
-		logger.log(INFO,"lock reduced, lockstate = "+this.lockState.toString());
+		logger.log(Level.INFO,"lock reduced, lockstate = "+this.lockState.toString());
 		this.lock.unlock();
 		return obj;
 	}
@@ -132,14 +134,14 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		while(this.lockState==State.RLT){
 			try{
 				this.waitingWriter+=1;
-				logger.log(INFO,"await on reader");
+				logger.log(Level.INFO,"await on reader");
 				this.available.await();
-				logger.log(INFO,"reader was released");
+				logger.log(Level.INFO,"reader was released");
 				this.waitingWriter-=1;
 			}catch(InterruptedException r){}
 		}
 		this.lockState=State.NL;
-		logger.log(INFO,"reader invalidated, lockState NL="+this.lockState.toString() );
+		logger.log(Level.INFO,"reader invalidated, lockState NL="+this.lockState.toString() );
 		this.lock.unlock();
 	}
 
@@ -147,13 +149,13 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.lock.lock();
 		while(this.lockState==State.WLT){
 			try{
-			logger.log(INFO,"await on writer");
+			logger.log(Level.INFO,"await on writer");
 			this.available.await();
-			logger.log(INFO,"writer was released");
+			logger.log(Level.INFO,"writer was released");
 			}catch(InterruptedException t){}
 		}
 		this.lockState=State.NL;
-		logger.log(INFO,"writer invalidated, lockState NL="+this.lockState.toString() );
+		logger.log(Level.INFO,"writer invalidated, lockState NL="+this.lockState.toString() );
 		this.lock.unlock();	
 		return obj;
 				
