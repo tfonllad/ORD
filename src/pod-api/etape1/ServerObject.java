@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.rmi.*;
 import java.util.List;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
 
 public class ServerObject{
 
@@ -12,15 +15,8 @@ public class ServerObject{
 	private List<Client_itf> readerList; 
 	private Client_itf writer;	
 	public Object obj;		
-	
-	//State
+	private static Logger logger;	
 	private State lockState;
-	public enum State{
-		NL,
-		RL,
-		WL;	
-	}
-	
 	/**Constructor ServerObject
 	*@param id : the unique id.
 	*@param o : cached object. Used for lookup and reader without writer
@@ -30,6 +26,8 @@ public class ServerObject{
 		this.id = id;	
 		this.obj = o;
 		this.readerList = new CopyOnWriteArrayList();
+		logger = Logger.getLogger("ServerObject");
+		logger.setLevel(Level.INFO);
 	}
 
 	public int getID(){
@@ -46,14 +44,15 @@ public class ServerObject{
 				obj = writer.reduce_lock(this.id);
 				this.readerList.add(this.writer);
 				writer = null;
+				logger.log(Level.INFO,"writer was removed");
 			}catch(RemoteException r){
-				System.out.println("Ecrivain perdu");
+				logger.log(Level.WARNING,"Writer was lost");
 			}finally{
 		 		writer=null;
 			}	
 			this.readerList.add(c);		
-			System.out.println("Client"+c.toString()+"retiré");
-
+			logger.log(Level.INFO,"Reader was added");
+		
 		}
 		this.readerList.add(c);
 		lockState=State.RL;
@@ -62,27 +61,35 @@ public class ServerObject{
  	* and readers.
 	* @return obj : up-to-date object
 	**/
-	public synchronized void lock_write(Client_itf c){
-		if(lockState==State.WL||this.readerList.size()!=0){	
-			if(writer!=null){
+	public synchronized void lock_write(Client_itf c){	
+		if(writer!=null){
 				try{	
 					obj = writer.invalidate_writer(this.id);
 					writer = null;
-				}catch(RemoteException r){}
+				}catch(RemoteException r){
+					logger.log(Level.WARNING,"Writer was lost");
+				}
 			}
+		
+		if(this.readerList.size()!=0){
 			for(Client_itf cli : readerList){
 				try{
 					cli.invalidate_reader(this.id);		
 					this.readerList.remove(cli);
-					System.out.println("Client"+cli.toString()+"retiré");
+					logger.log(Level.INFO,"Readers removed (lock_write)");
 				}catch(RemoteException r){
-					r.printStackTrace();
+					logger.log(Level.WARNING,"Reader was lost");
+
 				}
 			}
 		}
+		
 		try{
 			this.readerList.remove(c);
-		}catch(Exception e){}	
+			logger.log(Level.INFO,"new writer is not in reader List");
+		}catch(Exception e){
+			logger.log(Level.INFO,"List was empty. Whatever");	
+		}	
 		this.writer = c;
 		this.lockState = State.WL;
 		writer = c;
