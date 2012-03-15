@@ -50,14 +50,13 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		SharedObject so=null;
 		
 		try{
+			System.out.println("Appel server.lookup()");
 			id = server.lookup(name);
 			
 			if(hmID.containsKey(id)){
 				System.out.println("objet déja existant");
 			 	so = hmID.get(id);
 			}else{
-				System.out.println("Appel server.lookup()");
-				id = server.lookup(name);
 				if(id==0){
 					so = null;
 					System.out.println("Il faudra le créer");
