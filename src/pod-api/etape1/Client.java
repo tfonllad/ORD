@@ -1,5 +1,6 @@
 import java.rmi.*;
-import java.rmi.servernicastRemoteObject;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.*;
 import java.net.*;
 import java.util.HashMap;
@@ -33,7 +34,8 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			server = (Server_itf)Naming.lookup("//"+"localhost"+":"+String.valueOf(port)+"/Server");
 			System.out.println("INIT DONE");
 		}catch(Exception e){
-			e.printStackTrace();
+			System.out.println("Could not find the Server");
+			System.exit(0);
 		}	
 	}
 
@@ -58,7 +60,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 				id = server.lookup(name);
 				if(id==0){
 					so = null;
-					System.out.println("Il faudra le crée");
+					System.out.println("Il faudra le créer");
 				}else{
 					so = new SharedObject(id,null,(Client)client);
 					hmID.put(id,so);
@@ -66,6 +68,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			}
 		}catch(RemoteException r){
 			System.out.println("Connexion Lost");
+			System.exit(0);
 		}	
 		return so;
 	}		
@@ -78,7 +81,8 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		try{
 			server.register(name,id);
 		}catch(RemoteException r){;
-			r.printStackTrace();
+			System.out.println("Connexion Lost");
+			System.exit(0);
 		}
 		System.out.println("Register Done");
 	}
@@ -99,7 +103,8 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			hmID.put(id,so);
 				
 	 	}catch(RemoteException r){
-			r.printStackTrace();
+			System.out.println("Connexion Lost");
+			System.exit(0);
 		}
 		System.out.println("CREATE DONE with id "+id);
 		return so;		
@@ -117,11 +122,14 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 	public static Object lock_read(int id) {
 		Object o = null;
+		System.out.println("lock_read request");
 		try{
 			o = server.lock_read(id,client);
 		}catch(RemoteException r){
-			r.printStackTrace();
+			System.out.println("Connexion Lost");
+			System.exit(0);
 		}
+		System.out.println("lock_read obtained");
 		return o;	
 	}
 
@@ -131,14 +139,14 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 	public static Object lock_write(int id) {
 		Object o = null;
-		
+		System.out.println("lock_write request");
 		try{
-			System.out.println("client : server.lock_write");
 			o = server.lock_write(id,client);
-			System.out.println("client : server.lock_write DONE");
 		}catch(RemoteException r){
-			r.printStackTrace();
+			System.out.println("Connexion Lost");
+			System.exit(0);
 		}
+		System.out.println("lock_write request");
 		return o;
 	}
 
@@ -151,9 +159,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public Object reduce_lock(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
 		Object o;
-		System.out.println("Propagation de reduce_lock : client");
-		o = so.reduce_lock();	//objet inchangé
-		System.out.println("Le lock est réduit");	
+		o = so.reduce_lock();
 		return o;
 	}
 
