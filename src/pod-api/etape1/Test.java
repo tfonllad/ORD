@@ -74,18 +74,19 @@ private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 				cpt.unlock();
 			}
 			LOGGER.log(Level.SEVERE,"Client"+name+", final : "+i+".");
-		}	
+		}
+		/*	
 		while(!test.end(cpt)){
 			try{
 				Thread.sleep(100);
 			}catch(InterruptedException t){}
 		}
-		
+			
 		cpt.lock_read();
 		i = ((Compteur)cpt.obj).get();
 		cpt.unlock();
 		LOGGER.log(Level.SEVERE,"Client"+name+" a quitté avec :"+i+".");
-		System.exit(0);
+		System.exit(0);*/
 	}	
 	public static boolean end(SharedObject so){
 		so.lock_read();

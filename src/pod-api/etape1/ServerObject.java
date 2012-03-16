@@ -1,12 +1,14 @@
 /**@version etape1
 **/
 import java.util.ArrayList;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.rmi.*;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.Collections;
 
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
 
 public class ServerObject{
 
@@ -17,6 +19,12 @@ public class ServerObject{
 	public Object obj;		
 	private static Logger logger;	
 	private State lockState;
+	private Condition read;
+	private Condition write;
+	private int waitingWriter;
+	private ReentrantLock lock;
+	private int waitingReader;
+
 	/**Constructor ServerObject
 	*@param id : the unique id.
 	*@param o : cached object. Used for lookup and reader without writer
@@ -25,9 +33,14 @@ public class ServerObject{
 	public ServerObject(int id,Object o){
 		this.id = id;	
 		this.obj = o;
-		this.readerList = new CopyOnWriteArrayList();
+		this.readerList = Collections.synchronizedList(new ArrayList<Client_itf>());
 		logger = Logger.getLogger("ServerObject");
 		logger.setLevel(Level.INFO);
+		this.lock = new ReentrantLock();
+		this.read = lock.newCondition();
+		this.write = lock.newCondition();
+		this.waitingWriter = 0;
+		this.waitingReader =0;
 	}
 
 	public int getID(){
@@ -42,30 +55,60 @@ public class ServerObject{
  	* method call reduce_lock on the writer if not null
 	* @return o : up-to-date object
 	**/
-	public synchronized void lock_read(Client_itf c){
+	public void lock_read(Client_itf c){
+		this.lock.lock();
+		while(!((writer==null)&&(waitingWriter==0))){
+			try{
+				this.waitingReader=+1;
+				this.read.await();
+			}catch(InterruptedException e){
+				this.waitingReader-=1;
+				}
+		}
+		
 		if(lockState==State.WL){
 			try{
 				obj = writer.reduce_lock(this.id);
-				this.readerList.add(this.writer);
+				synchronized(this.readerList){
+					this.readerList.add(this.writer);
+				}
 				writer = null;
 				logger.log(Level.INFO,"writer was removed");
 			}catch(RemoteException r){
 				logger.log(Level.WARNING,"Writer was lost");
 			}finally{
 		 		writer=null;
-			}	
-			this.readerList.add(c);		
+			}
+				synchronized(this.readerList){
+				this.readerList.add(c);	
+			}					
 			logger.log(Level.INFO,"Reader was added");
 		
 		}
 		this.readerList.add(c);
 		lockState=State.RL;
+
+		if(waitingWriter==0){
+			read.signal();
+		}else{
+			write.signal();
+		}
+		this.lock.unlock();
 	}	
 	/**Method lock_writer : similar to lock_write, invalidate both writer
  	* and readers.
 	* @return obj : up-to-date object
 	**/
-	public synchronized void lock_write(Client_itf c){	
+	public void lock_write(Client_itf c){	
+		this.lock.lock();
+		while(this.readerList.size()!=0){
+			this.waitingWriter+=1;
+			try{
+				write.await();
+			}catch(InterruptedException r){}
+			this.waitingWriter-=1;
+		}
+		
 		if(writer!=null){
 				try{	
 					obj = writer.invalidate_writer(this.id);
@@ -74,16 +117,18 @@ public class ServerObject{
 					logger.log(Level.WARNING,"Writer was lost");
 				}
 			}
-		
+		synchronized(readerList){
 		if(this.readerList.size()!=0){
-			for(Client_itf cli : readerList){
-				try{
-					cli.invalidate_reader(this.id);		
-					this.readerList.remove(cli);
-					logger.log(Level.INFO,"Readers removed (lock_write)");
-				}catch(RemoteException r){
-					logger.log(Level.WARNING,"Reader was lost");
+		
+				for(Client_itf cli : readerList){
+					try{
+						cli.invalidate_reader(this.id);		
+						this.readerList.remove(cli);
+						logger.log(Level.INFO,"Readers removed (lock_write)");
+					}catch(RemoteException r){
+						logger.log(Level.WARNING,"Reader was lost");
 
+					}
 				}
 			}
 		}
@@ -97,5 +142,12 @@ public class ServerObject{
 		this.writer = c;
 		this.lockState = State.WL;
 		writer = c;
+
+		if(waitingReader!=0){
+			read.signal();
+		}else{
+			write.signal();
+		}
+		this.lock.unlock();
 	}
 }

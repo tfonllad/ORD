@@ -12,7 +12,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	private ReentrantLock lock;
 	private Condition available;
 	private Client client;
-	private int waitingWriter;
 	private static Logger logger;
 	public enum State{	
 		NL,
@@ -28,7 +27,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.obj = object;
 		this.lockState = State.NL;
 		this.client = c;
-		this.waitingWriter = 0;
 		this.lock = new ReentrantLock();
 		this.available = this.lock.newCondition();
 		logger = Logger.getLogger("SharedObject");
@@ -67,19 +65,14 @@ public class SharedObject implements Serializable, SharedObject_itf {
 				logger.log(Level.INFO,"lock updated : WLT");
 			break;
 			default: 
-				if(this.waitingWriter==0){	
-					logger.log(Level.INFO,"request lock_write");
-					this.obj =  client.lock_write(this.id);
-					this.lockState=State.WLT;
-					logger.log(Level.INFO,"lock_write acquired");
+				
+				logger.log(Level.INFO,"request lock_write");
+				this.obj =  client.lock_write(this.id);
+				this.lockState=State.WLT;
+				logger.log(Level.INFO,"lock_write acquired");
 				logger.log(Level.INFO,"lock_updated : RLT");
-				}else{
-					this.lockState=State.NL;
-					logger.log(Level.INFO,"update lock NL");
-	 				this.available.signal();
-					logger.log(Level.INFO,"let writer go, request again");
-					this.lock_write();
-				}
+				
+				
 			break;
 		}
 	}
@@ -138,12 +131,10 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public void invalidate_reader() {
 		this.lock.lock();
 		while(this.lockState==State.RLT){
-			try{
-				this.waitingWriter+=1;
+			try{	
 				logger.log(Level.INFO,"await on reader");
 				this.available.await();
 				logger.log(Level.INFO,"reader was released");
-				this.waitingWriter-=1;
 			}catch(InterruptedException r){
 				logger.log(Level.SEVERE,"Interrupted Exception");
 			}
