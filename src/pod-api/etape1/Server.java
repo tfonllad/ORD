@@ -6,29 +6,45 @@ import java.rmi.registry.*;
 import java.rmi.*;
 import java.net.*;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
 
 public class Server extends UnicastRemoteObject implements Server_itf{
 
 	private HashMap<String,Integer> hmName; 
 	private HashMap<Integer,ServerObject> hmID;
 	private static int cpt; 				//generation of id
-	
+	private ReentrantLock mutex;
+	private Condition creation;
+	private boolean creating;
+	private static Logger logger;
+
 	public Server() throws RemoteException{
 		super();
 		this.hmName = new HashMap<String,Integer>();
 		this.hmID = new HashMap<Integer,ServerObject>();
 		this.cpt = 0;
+		this.mutex = new ReentrantLock();
+		logger = Logger.getLogger("Server");
+		logger.setLevel(null);
 	}
+
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
+		logger.log(Level.FINE,"propagation lock_read");
 		ServerObject so = this.hmID.get(id);
 		so.lock_read(client);
+		logger.log(Level.FINE,"fin propagation lock_read");
 		return so.obj;
 	}
 
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
-		System.out.println("Propagation de lock_write");
+		logger.log(Level.FINE,"propagation lock_write");
 		ServerObject so = this.hmID.get(id);
 		so.lock_write(client);
+		logger.log(Level.FINE,"fin propagation lock_write");
 		return so.obj;
 	}
 
@@ -52,10 +68,10 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		int id;
 		System.out.println("lookup");
 		if(!this.hmName.containsKey(name)){
-			System.out.println("Name not found");
+			logger.log(Level.WARNING,"Name not found");
 			id = 0;
 		}else{
-			System.out.println("Name found");	
+			logger.log(Level.INFO,"Name found");	
 			id = this.hmName.get(name);
 		}
 		return id;		
@@ -68,14 +84,14 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	* @throws RemoteException
 	**/
 	public void register(String name,int id) throws java.rmi.RemoteException{
-			System.out.println("Register");
 			ServerObject so = this.hmID.get(id);
 			if(!hmName.containsKey(name)){
 				this.hmName.put(name,id);
 			}else{ 	/* name already bound to another object */
 			 	/* lancer une exception rmi ou  ne rien faire */
-				System.out.println("Le server possède déjà lenom");
+				logger.log(Level.WARNING,"Name already registred");
 			}
+			this.mutex.unlock();
 	}
 
 	/** Method create : create Server Object, add it to hmID and return ID
@@ -84,9 +100,11 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	* @throws RemoteException
 	**/
 	public int create(Object o) throws java.rmi.RemoteException{
+		this.mutex.lock();
 		cpt = cpt+1;
 		ServerObject so = new ServerObject(cpt,o);
 		this.hmID.put(cpt,so);
+		logger.log(Level.FINE,"Done creating objec. ID ="+cpt+".");
 		return cpt;
 	}
 
@@ -102,11 +120,13 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 			port = 1099;
 			registry = LocateRegistry.createRegistry(port);
 			url ="//"+"localhost"+":"+String.valueOf(port)+"/Server";
-			System.out.println(url);
+			System.out.println("URL du serveur : "+url);
 			Naming.bind(url,server);
+			System.out.println("Server is now running ...");
+
 		}catch(Exception e){
-			System.out.println("Fail to initialize Server");
-			e.printStackTrace();
+			logger.log(Level.SEVERE,"Failed to initialize Server");
+			System.exit(0);
 		}				
 	}
 }
