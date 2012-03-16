@@ -45,7 +45,7 @@ private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 				((Compteur) cpt.obj).addOne();
 				i = ((Compteur) cpt.obj).get();
 				int l = k + 1;
-				LOGGER.log(Level.SEVERE,"Client"+name+" :"+i+";iteration"+l+".");
+				LOGGER.log(Level.SEVERE,"Client"+name+".");
 				cpt.unlock();
 				try{
 					Thread.sleep(r.nextInt(3));
@@ -70,7 +70,7 @@ private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 				((Compteur) cpt.obj).addOne();
 				i = ((Compteur) cpt.obj).get();
 				int l = k+1;
-				LOGGER.log(Level.WARNING,"Client"+name+" :"+i+";iteration"+l+".");
+				LOGGER.log(Level.WARNING,"Client"+name+".");
 				cpt.unlock();
 			}
 			LOGGER.log(Level.SEVERE,"Client"+name+", final : "+i+".");

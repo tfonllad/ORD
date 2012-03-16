@@ -57,8 +57,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	}
 
 	// invoked by the user program on the client node
-	public void lock_write() {
-		
+	public void lock_write() {	
 		switch(this.lockState){
 			case WLC:
 				this.lockState=State.WLT;
