@@ -2,6 +2,9 @@
 **/
 import java.util.ArrayList;
 import java.rmi.*;
+
+import java.util.AbstractCollection;
+import java.util.AbstractList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
@@ -40,9 +43,8 @@ public class ServerObject{
 		this.readerList = Collections.synchronizedList(new ArrayList<Client_itf>());
 		logger = Logger.getLogger("ServerObject");
 		logger.setLevel(Level.INFO);
-		this.lock = new ReentrantLock();
-
         //Consistency
+		this.lock = new ReentrantLock();
 		this.read = lock.newCondition();
 		this.write = lock.newCondition();;
 		this.writing = false;
@@ -99,6 +101,7 @@ public class ServerObject{
 	* @return obj : up-to-date object
 	**/
 	public void lock_write(Client_itf c){	
+
 		this.lock.lock();
 		Object o = obj;
         while(writing | nbReader != 0 ){
@@ -137,6 +140,7 @@ public class ServerObject{
         }else{
             write.signal();
         }
+
 		this.lock.unlock();
 	}
 }
