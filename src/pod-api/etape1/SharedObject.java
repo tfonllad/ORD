@@ -39,18 +39,14 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		switch(this.lockState){
 			case RLC :
 				this.lockState=State.RLT;
-				logger.log(Level.INFO,"lock updated : RLT");
 			break;
 			case WLC:
 				this.lockState=State.RLT_WLC;
-				logger.log(Level.INFO,"lock updated : RLT_WLC");
 			break;
 			default:
-				logger.log(Level.INFO,"lock_read request to client");
+
 				this.obj = client.lock_read(this.id);
 				this.lockState=State.RLT;
-				logger.log(Level.INFO,"lock_read acquired");
-				logger.log(Level.INFO,"lock_updated : RLT");
 			break;					
 		}
 		
@@ -60,21 +56,19 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public void lock_write() {	
 		switch(this.lockState){
 			case WLC:
-				this.lockState=State.WLT;
-				logger.log(Level.INFO,"lock updated : WLT");
-			break;
+		        logger.log(Level.INFO,"my lock was :"+this.lockState+" :local write");
+                 this.lockState=State.WLT;
+
+	    	break;
 			default: 
-				
-				logger.log(Level.INFO,"request lock_write");
 				this.obj =  client.lock_write(this.id);
 				this.lockState=State.WLT;
-				logger.log(Level.INFO,"lock_write acquired");
-				logger.log(Level.INFO,"lock_updated : RLT");
-				
-				
+                logger.log(Level.INFO,"I can now write");
+    
 			break;
+            
 		}
-	}
+    }
 
 	// invoked by the user program on the client node
 	public void unlock() {
@@ -82,17 +76,14 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		switch(this.lockState){
 			case RLT:
 			lockState = State.RLC;
-			logger.log(Level.INFO,"unlock : RLC");
 			break;
 			case WLT:
 			lockState = State.WLC;
-			logger.log(Level.INFO,"unlock : WLC");
 			case RLT_WLC:
-			lockState = State.WLC;
-			logger.log(Level.INFO,"unlock : WLC");
+			lockState = State.WLC;	
 		}
 		this.available.signal();
-		logger.log(Level.INFO,"unlock : signal");	
+		//logger.log(Level.INFO,"unlock : signal");	
 		this.lock.unlock();
 	}
 
@@ -101,9 +92,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.lock.lock();
 		while(this.lockState==State.WLT){
 			try{
-				logger.log(Level.INFO,"await on writer");
+				logger.log(Level.INFO,"await on client on :"+id+".");
 				this.available.await();
-				logger.log(Level.INFO,"writer was released");
+				logger.log(Level.INFO,"client was reduced :"+id+".");
 			}catch(InterruptedException i){}
 		}
 		switch(this.lockState){
@@ -120,8 +111,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			logger.log(Level.SEVERE,"inconsistent lock");
 			break;
 		}
-		logger.log(Level.INFO,"lock reduced, lockstate = "+this.lockState.toString());
-		this.available.signal();
+		this.available.signal();//réveil en chaîne des client-redacteur
 		this.lock.unlock();
 		return obj;
 	}
@@ -131,17 +121,15 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.lock.lock();
 		while(this.lockState==State.RLT){
 			try{	
-				logger.log(Level.INFO,"await on reader");
+				logger.log(Level.INFO,"await on reader : "+id+".");
 				this.available.await();
-				logger.log(Level.INFO,"reader was released");
+				logger.log(Level.INFO,"reader was released"+id+".");
 			}catch(InterruptedException r){
 				logger.log(Level.SEVERE,"Interrupted Exception");
 			}
 		}
-		
+
 		this.lockState=State.NL;
-		this.available.signal();
-		logger.log(Level.INFO,"reader invalidated, lockState NL="+this.lockState.toString() );
 		this.lock.unlock();
 	}
 
@@ -149,14 +137,13 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.lock.lock();
 		while(this.lockState==State.WLT){
 			try{
-			logger.log(Level.INFO,"await on writer");
+			logger.log(Level.INFO,"await on me");
 			this.available.await();
-			logger.log(Level.INFO,"writer was released");
-			}catch(InterruptedException t){}
+				}catch(InterruptedException t){}
 		}
+
 		this.lockState=State.NL;
-		this.available.signal();
-		logger.log(Level.INFO,"writer invalidated, lockState NL="+this.lockState.toString() );
+	    logger.log(Level.INFO,"I can't write and my lock is :"+this.lockState+"." );
 		this.lock.unlock();	
 		return obj;
 				
