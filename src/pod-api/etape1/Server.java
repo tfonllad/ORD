@@ -29,7 +29,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		this.cpt = 0;
 		this.mutex = new ReentrantLock();
 		logger = Logger.getLogger("Server");
-		logger.setLevel(Level.FINE);
+		logger.setLevel(Level.WARNING);
 	}
 
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
@@ -43,7 +43,8 @@ public class Server extends UnicastRemoteObject implements Server_itf{
         public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
 		logger.log(Level.FINE,"propagation lock_write");
 		ServerObject so = this.hmID.get(id);
-		so.lock_write(client);
+        ServerObject so_prev = so;
+		so.lock_write(client); 
 		logger.log(Level.FINE,"fin propagation lock_write");
 		return so.obj;
 	}

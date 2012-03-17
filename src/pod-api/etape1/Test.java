@@ -1,33 +1,97 @@
-import java.util.Random;
 import java.lang.Thread;
-public class Test{
+import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.io.IOException;
 
-	public static void main(String args[]){
+public class Test{
+private static Test test;
+private static Logger LOGGER = Logger.getLogger(Test.class.getName());
+	
+	public void writeLog(){
+		LOGGER.setLevel(Level.WARNING);
+	}
 		
+	public static void main(String args[]){			
+		String name = args[0];
+		Test logger = new Test();
+		try{
+			MyLogger.setup(name);
+
+		}catch(IOException e){}	
+		logger.writeLog();	
+	 		
 		Client.init();
+		int i=0;
+
 		Random r = new Random();
 		SharedObject cpt = Client.lookup("COMPTEUR");
+		
 		if(cpt==null){
 			cpt = Client.create(new Compteur());
 			Client.register("COMPTEUR",cpt);
-			System.out.println("Création de Compteur");
+			LOGGER.log(Level.INFO,"Création de Compteur");
 		}else{
-			System.out.println("Récupération de Compteur");
+			LOGGER.log(Level.INFO,"Récupération de Compteur");
 		}
-		
-		for(int i = 0; i < 50; i++){
-			cpt.lock_write();
-			((Compteur) cpt.obj).addOne();
-			System.out.println("Valeur en cours :"+((Compteur)cpt.obj).get());
-			cpt.unlock();
-				int j = r.nextInt(i+1);
+		if(name.equals("1")){
+			LOGGER.log(Level.INFO,"Lancer les autres process !");			
 			try{
-				Thread.sleep(j*100);
+				Thread.sleep(2000);
+			}catch(InterruptedException t){}
+	
+			for(int k=0;k<1000;k++){
+				cpt.lock_write();
+				((Compteur) cpt.obj).addOne();
+				i = ((Compteur) cpt.obj).get();
+				int l = k + 1;
+				LOGGER.log(Level.SEVERE,"Client"+name+".");
+				cpt.unlock();
+				try{
+					Thread.sleep(r.nextInt(3));
+				}catch(InterruptedException t){}
+			}
+			System.out.println(name+" final : "+i+".");
+			//System.exit(0);
+		}else{		
+		try{
+			Thread.sleep(3000);
+			}catch(InterruptedException t){}
+			for(int k=0;k<1000;k++){
+			
+				cpt.lock_read();
+				i = ((Compteur)cpt.obj).get();
+				LOGGER.log(Level.INFO,name+" a lu :"+i+".");
+				cpt.unlock();
+			try{
+					Thread.sleep(r.nextInt(1));
+				}catch(InterruptedException t){}
+				cpt.lock_write();
+				((Compteur) cpt.obj).addOne();
+				i = ((Compteur) cpt.obj).get();
+				int l = k+1;
+				LOGGER.log(Level.WARNING,"Client"+name+".");
+				cpt.unlock();
+			}
+			LOGGER.log(Level.SEVERE,"Client"+name+", final : "+i+".");
+		}
+		/*	
+		while(!test.end(cpt)){
+			try{
+				Thread.sleep(100);
 			}catch(InterruptedException t){}
 		}
+			
 		cpt.lock_read();
-		System.out.println("Valeur finale :"+((Compteur)cpt.obj).get());
+		i = ((Compteur)cpt.obj).get();
 		cpt.unlock();
+		LOGGER.log(Level.SEVERE,"Client"+name+" a quitté avec :"+i+".");
+		System.exit(0);*/
+	}	
+	public static boolean end(SharedObject so){
+		so.lock_read();
+		int i = ((Compteur)so.obj).get();
+		so.unlock();
+		return i == 6000;
 	}
 }
-
