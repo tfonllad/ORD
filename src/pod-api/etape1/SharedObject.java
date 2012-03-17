@@ -49,14 +49,14 @@ public class SharedObject implements Serializable, SharedObject_itf {
 				this.lockState=State.RLT;
 			break;					
 		}
-		
 	}
 
 	// invoked by the user program on the client node
 	public void lock_write() {	
-		switch(this.lockState){
+		lock.lock();
+        switch(this.lockState){
 			case WLC:
-		        logger.log(Level.INFO,"my lock was :"+this.lockState+" :local write");
+		        logger.log(Level.INFO,this.lockState+" : local write");
                  this.lockState=State.WLT;
 
 	    	break;
@@ -68,6 +68,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			break;
             
 		}
+        lock.unlock();
     }
 
 	// invoked by the user program on the client node
@@ -92,9 +93,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.lock.lock();
 		while(this.lockState==State.WLT){
 			try{
-				logger.log(Level.INFO,"await on client on :"+id+".");
+				//logger.log(Level.INFO,"await on client on :"+id+".");
 				this.available.await();
-				logger.log(Level.INFO,"client was reduced :"+id+".");
+				//logger.log(Level.INFO,"client was reduced :"+id+".");
 			}catch(InterruptedException i){}
 		}
 		switch(this.lockState){
@@ -111,6 +112,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			logger.log(Level.SEVERE,"inconsistent lock");
 			break;
 		}
+        logger.log(Level.INFO,"I was <b>reduced</b> to "+this.lockState+".");
 		this.available.signal();//réveil en chaîne des client-redacteur
 		this.lock.unlock();
 		return obj;
@@ -121,9 +123,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.lock.lock();
 		while(this.lockState==State.RLT){
 			try{	
-				logger.log(Level.INFO,"await on reader : "+id+".");
+				//logger.log(Level.INFO,"await on reader : "+id+".");
 				this.available.await();
-				logger.log(Level.INFO,"reader was released"+id+".");
+				//logger.log(Level.INFO,"reader was released"+id+".");
 			}catch(InterruptedException r){
 				logger.log(Level.SEVERE,"Interrupted Exception");
 			}
@@ -137,13 +139,13 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.lock.lock();
 		while(this.lockState==State.WLT){
 			try{
-			logger.log(Level.INFO,"await on me");
+		//	logger.log(Level.INFO,"await on me");
 			this.available.await();
 				}catch(InterruptedException t){}
 		}
 
 		this.lockState=State.NL;
-	    logger.log(Level.INFO,"I can't write and my lock is :"+this.lockState+"." );
+	    logger.log(Level.INFO,"I was <b>invalidated</b> to :"+this.lockState+"." );
 		this.lock.unlock();	
 		return obj;
 				

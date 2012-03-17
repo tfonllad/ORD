@@ -30,7 +30,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// initialization of the client layer -> OK
 	public static void init() {
-		logger.setLevel(Level.FINE);
+		logger.setLevel(Level.SEVERE);
         hmID = new HashMap<Integer,SharedObject>();
 		try{  	
 			client = new Client();	
