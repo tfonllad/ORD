@@ -64,7 +64,7 @@ public class ServerObject{
  	* method call reduce_lock on the writer if not null
 	* @return o : up-to-date object
 	**/
-	public void lock_read(Client_itf c){
+	public synchronized void lock_read(Client_itf c){
 		this.lock.lock();	
         Object o = obj;
         while(writing){
@@ -76,15 +76,10 @@ public class ServerObject{
         if(lockState==State.WL){
             try{
                 obj = writer.reduce_lock(this.id);
-            if(o.equals(obj)){
-                    logger.log(Level.SEVERE,"Désynchro");
-                    System.exit(0);
-                }
-            }catch(RemoteException r){}
+                writer=null;    
+                }catch(RemoteException r){}
         }
         lockState = State.RL;
-        writer=null;
-        logger.log(Level.SEVERE,"ajout list");
         readerList.add(c);
         nbReader-=1;
         if(waitingWriter==0){
@@ -100,7 +95,7 @@ public class ServerObject{
  	* and readers.
 	* @return obj : up-to-date object
 	**/
-	public void lock_write(Client_itf c){	
+	public synchronized void lock_write(Client_itf c){	
 
 		this.lock.lock();
 		Object o = obj;
@@ -114,11 +109,7 @@ public class ServerObject{
         writing = true;
         if(lockState==State.WL){
             try{
-                obj = writer.invalidate_writer(this.id);
-                if(o.equals(obj)){
-                    logger.log(Level.SEVERE,"Désynchro");
-                    System.exit(0);
-                }
+                obj = writer.invalidate_writer(this.id); 
             }catch(RemoteException ni){}
         }
         writer = c;
