@@ -39,17 +39,17 @@ public class ServerObject{
 	public ServerObject(int id,Object o){
 		this.id = id;	
 		this.obj = o;
-        this.writer = null;
+        	this.writer = null;
 		this.readerList = Collections.synchronizedList(new ArrayList<Client_itf>());
 		logger = Logger.getLogger("ServerObject");
 		logger.setLevel(Level.INFO);
-        //Consistency
+        	//Consistency
 		this.lock = new ReentrantLock();
 		this.read = lock.newCondition();
 		this.write = lock.newCondition();;
 		this.writing = false;
-        this.waitingWriter = 0;
-        this.nbReader = 0;
+        	this.waitingWriter = 0;
+        	this.nbReader = 0;
 	}
 
 	public int getID(){
@@ -64,83 +64,73 @@ public class ServerObject{
  	* method call reduce_lock on the writer if not null
 	* @return o : up-to-date object
 	**/
-	public void lock_read(Client_itf c){
+	public synchronized void lock_read(Client_itf c){
 		this.lock.lock();	
-        Object o = obj;
-        while(writing){
-            try{
-                read.await();
-            }catch(InterruptedException r){}
-        }
-        nbReader+=1;
-        if(lockState==State.WL){
-            try{
-                obj = writer.reduce_lock(this.id);
-            if(o.equals(obj)){
-                    logger.log(Level.SEVERE,"Désynchro");
-                    System.exit(0);
-                }
-            }catch(RemoteException r){}
-        }
-        lockState = State.RL;
-        writer=null;
-        logger.log(Level.SEVERE,"ajout list");
-        readerList.add(c);
-        nbReader-=1;
-        if(waitingWriter==0){
-            read.signal();
-        }else{
-            write.signal();
-        }
-
-       	this.lock.unlock();
+        	Object o = obj;
+        	while(writing){
+            	try{
+                	read.await();
+            	}catch(InterruptedException r){}
+        	}
+		writing = true;
+        	if(lockState==State.WL){
+            		try{//only on reader should enter here
+                		obj = writer.reduce_lock(this.id); 
+            		}catch(RemoteException r){}
+        	}
+        	lockState = State.RL;
+        	writer=null;
+        	logger.log(Level.SEVERE,"ajout list");
+        	readerList.add(c); 
+		writing = false;
+        	if(waitingWriter==0){
+            		read.signal();
+        	}else{
+            		write.signal();
+        	}
+		this.lock.unlock();
 	}	
 
 	/**Method lock_writer : similar to lock_write, invalidate both writer
  	* and readers.
 	* @return obj : up-to-date object
 	**/
-	public void lock_write(Client_itf c){	
+	public synchronized void lock_write(Client_itf c){	
 
 		this.lock.lock();
 		Object o = obj;
-        while(writing | nbReader != 0 ){
-            waitingWriter+=1;
-            try{
-                write.await();
-            }catch(InterruptedException r){}
-            waitingWriter-=1;
-        }
-        writing = true;
-        if(lockState==State.WL){
-            try{
-                obj = writer.invalidate_writer(this.id);
-                if(o.equals(obj)){
-                    logger.log(Level.SEVERE,"Désynchro");
-                    System.exit(0);
-                }
-            }catch(RemoteException ni){}
-        }
-        writer = c;
-        if(lockState==State.RL){
-             logger.log(Level.SEVERE,"début liste invalidation");
-             for(Client_itf cli : readerList){
-                         try{
-                    cli.invalidate_reader(this.id);
-                }catch(RemoteException r){}
-            }
-            logger.log(Level.SEVERE,"fin liste invalidation");
-        } 
-        logger.log(Level.SEVERE,"clear list");
-        readerList.clear();
-        lockState = State.WL;
-        writing = false;
-        if(waitingWriter==0){
-            read.signal();
-        }else{
-            write.signal();
-        }
-
-		this.lock.unlock();
+        	while(writing){
+            	waitingWriter+=1;
+            	try{
+                	write.await();
+            	}catch(InterruptedException r){}
+            		waitingWriter-=1;
+        	}
+        	writing = true;
+        	if(lockState==State.WL){
+            		try{
+                		obj = writer.invalidate_writer(this.id);
+                	}catch(RemoteException ni){}
+        	}	
+        	writer = c;
+        	if(lockState==State.RL){
+            		logger.log(Level.SEVERE,"début liste invalidation");
+             		for(Client_itf cli : readerList){
+                        	 try{
+                	    	cli.invalidate_reader(this.id);
+              		  	}catch(RemoteException r){}
+            		}
+            		logger.log(Level.SEVERE,"fin liste invalidation");
+        	} 
+        	logger.log(Level.SEVERE,"clear list");
+        	readerList.clear();
+       	 	lockState = State.WL;
+        	writing = false;
+        	if(waitingWriter==0){
+            		read.signal();
+       	 	}else{
+            		write.signal();
+        	}
+	    this.lock.unlock();
 	}
 }
