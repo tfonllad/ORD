@@ -36,6 +36,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	// invoked by the user program on the client node
 	public void lock_read() {
+            boolean update = false;
+            //lock.lock();
+            synchronized(this) {
 		switch(this.lockState){
 			case RLC :
 				this.lockState=State.RLT;
@@ -44,36 +47,44 @@ public class SharedObject implements Serializable, SharedObject_itf {
 				this.lockState=State.RLT_WLC;
 			break;
 			default:
+                                update = true;
 
-				this.obj = client.lock_read(this.id);
 				this.lockState=State.RLT;
 			break;					
-		}
-	}
+        }
+                 }//lock.unlock();
+            if(update){
+                this.obj = client.lock_read(this.id);
+            }
+	}		
 
 	// invoked by the user program on the client node
-	public void lock_write() {	
-		lock.lock();
+	public void lock_write() {
+                boolean update = false;
+		//lock.lock();
+                synchronized(this) {
         switch(this.lockState){
-			case WLC:
-		        logger.log(Level.INFO,this.lockState+" : local write");
-                 this.lockState=State.WLT;
-
+                case WLC:
+		logger.log(Level.INFO,this.lockState+" : local write");
+                this.lockState=State.WLT;
 	    	break;
-			default: 
-				this.obj =  client.lock_write(this.id);
-				this.lockState=State.WLT;
-                logger.log(Level.INFO,"I can now write");
-    
-			break;
+	        default: 
+                update = true;
+		this.lockState=State.WLT;
+   		break;
             
 		}
-        lock.unlock();
+    }
+       // lock.unlock();
+        if(update){
+            this.obj = client.lock_write(this.id);
+            logger.log(Level.INFO,"I can now write");
+        }
     }
 
 	// invoked by the user program on the client node
-	public void unlock() {
-		this.lock.lock();
+	public synchronized void unlock() {
+	//	this.lock.lock();
 		switch(this.lockState){
 			case RLT:
 			lockState = State.RLC;
@@ -83,18 +94,20 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			case RLT_WLC:
 			lockState = State.WLC;	
 		}
-		this.available.signal();
+                notify();
+		//this.available.signal();
 		//logger.log(Level.INFO,"unlock : signal");	
-		this.lock.unlock();
+	//	this.lock.unlock();
 	}
 
 	// callback invoked remotely by the server
 	public synchronized Object reduce_lock() {
-		this.lock.lock();
+	//	this.lock.lock();
+                State prev_state = this.lockState;
 		while(this.lockState==State.WLT){
 			try{
 				//logger.log(Level.INFO,"await on client on :"+id+".");
-				this.available.await();
+				wait();
 				//logger.log(Level.INFO,"client was reduced :"+id+".");
 			}catch(InterruptedException i){}
 		}
@@ -109,22 +122,22 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			this.lockState=State.RLC;
 			break;
 			default: 
-			logger.log(Level.SEVERE,"inconsistent lock");
+			logger.log(Level.SEVERE,"inconsistent lock reduced_lock on "+prevState+"." );
 			break;
 		}
         logger.log(Level.INFO,"I was <b>reduced</b> to "+this.lockState+".");
-		this.available.signal();//réveil en chaîne des client-redacteur
-		this.lock.unlock();
+	//	this.available.signal();//réveil en chaîne des client-redacteur
+	//	this.lock.unlock();
 		return obj;
 	}
 
 	// callback invoked remotely by the server
-	public void invalidate_reader() {
-		this.lock.lock();
+	public synchronized void invalidate_reader() {
+	//	this.lock.lock();
 		while(this.lockState==State.RLT){
 			try{	
 				//logger.log(Level.INFO,"await on reader : "+id+".");
-				this.available.await();
+				wait();
 				//logger.log(Level.INFO,"reader was released"+id+".");
 			}catch(InterruptedException r){
 				logger.log(Level.SEVERE,"Interrupted Exception");
@@ -132,21 +145,21 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		}
 
 		this.lockState=State.NL;
-		this.lock.unlock();
+	//	this.lock.unlock();
 	}
 
-	public Object invalidate_writer() {
-		this.lock.lock();
+	public synchronized Object invalidate_writer() {
+		//this.lock.lock();
 		while(this.lockState==State.WLT){
 			try{
 		//	logger.log(Level.INFO,"await on me");
-			this.available.await();
-				}catch(InterruptedException t){}
+			wait();
+			}catch(InterruptedException t){}
 		}
 
 		this.lockState=State.NL;
 	    logger.log(Level.INFO,"I was <b>invalidated</b> to :"+this.lockState+"." );
-		this.lock.unlock();	
+		//this.lock.unlock();	
 		return obj;
 				
 	}

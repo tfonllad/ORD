@@ -40,12 +40,12 @@ private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 				Thread.sleep(2000);
 			}catch(InterruptedException t){}
 	
-			for(int k=0;k<1000;k++){
+			for(int k=0;k<100;k++){
 				cpt.lock_write();
 				((Compteur) cpt.obj).addOne();
 				i = ((Compteur) cpt.obj).get();
 				int l = k + 1;
-				LOGGER.log(Level.SEVERE,"Client"+name+".");
+				LOGGER.log(Level.SEVERE,"Client"+name+" ecrit : "+i+".");
 				cpt.unlock();
 				try{
 					Thread.sleep(r.nextInt(3));
@@ -57,7 +57,7 @@ private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 		try{
 			Thread.sleep(3000);
 			}catch(InterruptedException t){}
-			for(int k=0;k<1000;k++){
+			for(int k=0;k<100;k++){
 			
 				cpt.lock_read();
 				i = ((Compteur)cpt.obj).get();
@@ -70,7 +70,7 @@ private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 				((Compteur) cpt.obj).addOne();
 				i = ((Compteur) cpt.obj).get();
 				int l = k+1;
-				LOGGER.log(Level.WARNING,"Client"+name+".");
+				LOGGER.log(Level.WARNING,"Client"+name+" ecrit : "+i+".");
 				cpt.unlock();
 			}
 			LOGGER.log(Level.SEVERE,"Client"+name+", final : "+i+".");
