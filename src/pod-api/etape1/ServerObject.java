@@ -66,6 +66,7 @@ public class ServerObject{
 	**/
 	public synchronized void lock_read(Client_itf c){
 		this.lock.lock();	
+
         	Object o = obj;
         	while(writing){
             	try{
@@ -99,6 +100,7 @@ public class ServerObject{
 
 		this.lock.lock();
 		Object o = obj;
+
         	while(writing){
             	waitingWriter+=1;
             	try{

@@ -9,8 +9,8 @@ private static Test test;
 private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 	
 	public void writeLog(){
-		LOGGER.setLevel(Level.INFO);
-	}
+		LOGGER.setLevel(Level.FINE);
+        }
 		
 	public static void main(String args[]){			
 		String name = args[0];
