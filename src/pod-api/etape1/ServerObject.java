@@ -9,8 +9,7 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.util.Collections;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
+
 
 public class ServerObject{
 
@@ -23,10 +22,7 @@ public class ServerObject{
 	private State lockState;
 
     //Consistency
-    private int nbReader;
-	private ReentrantLock lock;
-	private Condition read;
-	private Condition write;
+    private boolean reading;
     private boolean writing;
 	private int waitingWriter;
 
@@ -39,17 +35,13 @@ public class ServerObject{
 	public ServerObject(int id,Object o){
 		this.id = id;	
 		this.obj = o;
-        	this.writer = null;
+        this.writer = null;
 		this.readerList = Collections.synchronizedList(new ArrayList<Client_itf>());
 		logger = Logger.getLogger("ServerObject");
 		logger.setLevel(Level.INFO);
-        	//Consistency
-		this.lock = new ReentrantLock();
-		this.read = lock.newCondition();
-		this.write = lock.newCondition();;
+        //Consistency
 		this.writing = false;
-        	this.waitingWriter = 0;
-        	this.nbReader = 0;
+        this.waitingWriter = 0;
 	}
 
 	public int getID(){
@@ -64,16 +56,14 @@ public class ServerObject{
  	* method call reduce_lock on the writer if not null
 	* @return o : up-to-date object
 	**/
-	public synchronized void lock_read(Client_itf c){
-		this.lock.lock();	
-
+	public synchronized void lock_read(Client_itf c){	
         	Object o = obj;
         	while(writing){
             	try{
-                	read.await();
+                	wait();
             	}catch(InterruptedException r){}
         	}
-		writing = true;
+		    writing = true;
         	if(lockState==State.WL){
             		try{//only on reader should enter here
                 		obj = writer.reduce_lock(this.id); 
@@ -81,15 +71,13 @@ public class ServerObject{
         	}
         	lockState = State.RL;
         	writer=null;
-        	logger.log(Level.SEVERE,"ajout list");
         	readerList.add(c); 
-		writing = false;
-        	if(waitingWriter==0){
-            		read.signal();
+		    writing = false;
+        	/*if(waitingWriter==0){
+            		notify();//signal the next reader.
         	}else{
-            		write.signal();
-        	}
-		this.lock.unlock();
+            		notify();
+        	}*/
 	}	
 
 	/**Method lock_writer : similar to lock_write, invalidate both writer
@@ -97,17 +85,16 @@ public class ServerObject{
 	* @return obj : up-to-date object
 	**/
 	public synchronized void lock_write(Client_itf c){	
-
-		this.lock.lock();
 		Object o = obj;
 
         	while(writing){
             	waitingWriter+=1;
             	try{
-                	write.await();
+                	wait();
             	}catch(InterruptedException r){}
             		waitingWriter-=1;
         	}
+            //c is the only client here. There are no // lock_read
         	writing = true;
         	if(lockState==State.WL){
             		try{
@@ -116,23 +103,20 @@ public class ServerObject{
         	}	
         	writer = c;
         	if(lockState==State.RL){
-            		logger.log(Level.SEVERE,"début liste invalidation");
              		for(Client_itf cli : readerList){
-                        	 try{
+                         try{
                 	    	cli.invalidate_reader(this.id);
               		  	}catch(RemoteException r){}
             		}
-            		logger.log(Level.SEVERE,"fin liste invalidation");
         	} 
-        	logger.log(Level.SEVERE,"clear list");
         	readerList.clear();
        	 	lockState = State.WL;
         	writing = false;
-        	if(waitingWriter==0){
-            		read.signal();
+        	/*if(waitingWriter==0){
+            		notify();//signal reader
        	 	}else{
-            		write.signal();
-        	}
-	    this.lock.unlock();
+            		notify();//signal next writer. He will wait in invalidation
+        	}*/
+            notify();
 	}
 }

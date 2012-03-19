@@ -49,13 +49,14 @@ public class SharedObject implements Serializable, SharedObject_itf {
 				this.lockState=State.RLT_WLC;
 			break;
 			default:
-                                update = true;
-				this.lockState=State.RLT;
+                update = true;
 			break;					
 		}
-                lock.unlock(); 
+                lock.unlock();
+                logger.log(Level.WARNING,"Release the mutex with :"+lockState+".");
                 if(update){
-                        this.obj = client.lock_read(this.id);
+                this.obj = client.lock_read(this.id);
+				this.lockState=State.RLT;
                 logger.log(Level.INFO,"I can read with "+lockState+".");
                 }
 	}
@@ -63,21 +64,24 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// invoked by the user program on the client node
 	public void lock_write() {
                 boolean update = false;
-	        lock.lock();
+                logger.log(Level.INFO,"asing lock_write before mutex");
+	            lock.lock();
+                logger.log(Level.INFO,"asking lock_write after mutex");
                 switch(this.lockState){
 		        case WLC:
                         this.lockState=State.WLT;
                         logger.log(Level.INFO,"writing with cache");
 	    	        break;
-		        default: 
-			this.lockState=State.WLT;
+		        default: 	
                         update = true;
 		        break;
 	        }
                 lock.unlock();
+                logger.log(Level.WARNING,"Release the mutex with :"+lockState+".");
                 if(update){
                         this.obj = client.lock_write(this.id);
-                        logger.log(Level.INFO,"I can write with "+lockState+".");
+                        this.lockState=State.WLT;
+                        logger.log(Level.INFO,"I can write with "+lockState+".");  
                 }
         } 
 
@@ -120,8 +124,8 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			this.lockState=State.RLC;
 			break;
 			default: 
-                            logger.log(Level.WARNING,"reduce : Lock incoherent :"+lockState+".");
-                        break;
+                        logger.log(Level.SEVERE,"reduce : Lock incoherent :"+lockState+".");
+            break;
 		}
                 logger.log(Level.INFO,"I was <b>reduced</b> to "+this.lockState+".");
 		this.lock.unlock();
@@ -148,7 +152,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                         //do nothing
                     break;
                     default:
-                        logger.log(Level.WARNING,"inv_writer: Lock incoherent :"+lockState+".");
+                        logger.log(Level.SEVERE,"inv_writer: Lock incoherent :"+lockState+".");
                     break;
                 }
                 this.lockState = State.NL;
@@ -170,7 +174,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                         //do nothing
                     break;
                     default:
-                        logger.log(Level.WARNING,"inv_reader: Lock incoherent :"+lockState+".");
+                        logger.log(Level.SEVERE,"inv_reader: Lock incoherent :"+lockState+".");
                     break;
                 }
                 this.lockState = State.NL;
