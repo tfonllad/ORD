@@ -107,7 +107,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 				        this.available.await();
 		        	 }catch(InterruptedException i){}
 		        }
-                        this.lockState = RLC;	
+                        this.lockState = State.RLC;	
 			break;
 			case RLT_WLC:
 			this.lockState=State.RLT;
@@ -117,14 +117,14 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			break;
 			default: 
                             logger.log(Level.WARNING,"reduce : Lock incoherent :"+lockState+".");
-			break
+                        break;
 		}
                 logger.log(Level.INFO,"I was <b>reduced</b> to "+this.lockState+".");
 		this.lock.unlock();
 		return obj;
 	}
         public synchronized Object invalidate_writer(){
-                this.lock.lock():
+            this.lock.lock();
                 switch(this.lockState){
                     case WLT:
                         while(this.lockState==State.WLT){
@@ -144,15 +144,16 @@ public class SharedObject implements Serializable, SharedObject_itf {
                         //none
                     break;
                     default:
-                        logger.log(Level.WARNING;"inv_writer: Lock incoherent :"+lockState+".");
+                        logger.log(Level.WARNING,"inv_writer: Lock incoherent :"+lockState+".");
                     break;
                 }
                 this.lockState = State.NL;
                 this.lock.unlock();
+                return obj;
         }
 
-        public synchronized Object invalidate_reader(){
-                this.lock.lock():
+        public synchronized void invalidate_reader(){
+                this.lock.lock();
                 switch(this.lockState){
                     case RLT:
                         while(this.lockState==State.RLT){
@@ -165,7 +166,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                         //none
                     break;
                     default:
-                        logger.log(Level.WARNING;"inv_reader: Lock incoherent :"+lockState+".");
+                        logger.log(Level.WARNING,"inv_reader: Lock incoherent :"+lockState+".");
                     break;
                 }
                 this.lockState = State.NL;
