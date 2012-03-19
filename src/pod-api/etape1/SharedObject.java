@@ -43,6 +43,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		switch(this.lockState){
 			case RLC :
 				this.lockState=State.RLT;
+                                logger.log(Level.INFO,"reading in cache");
 			break;
 			case WLC:
 				this.lockState=State.RLT_WLC;
@@ -66,6 +67,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 switch(this.lockState){
 		        case WLC:
                         this.lockState=State.WLT;
+                        logger.log(Level.INFO,"writing with cache");
 	    	        break;
 		        default: 
 			this.lockState=State.WLT;
@@ -81,6 +83,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	// invoked by the user program on the client node
 	public synchronized void unlock(){
+            this.lock.lock();
 		switch(this.lockState){
 			case RLT:
 			lockState = State.RLC;
@@ -94,7 +97,8 @@ public class SharedObject implements Serializable, SharedObject_itf {
                             logger.log(Level.WARNING,"Unlock with : "+lockState+".");
                         break;
 		}
-                this.available.signal();		
+                this.available.signal();	 
+                this.lock.unlock();
 	}
 
 	// callback invoked remotely by the server
@@ -141,7 +145,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                         }
                     break;
                     case WLC:
-                        //none
+                        //do nothing
                     break;
                     default:
                         logger.log(Level.WARNING,"inv_writer: Lock incoherent :"+lockState+".");
@@ -163,7 +167,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		        }
                     break;
                     case RLC:
-                        //none
+                        //do nothing
                     break;
                     default:
                         logger.log(Level.WARNING,"inv_reader: Lock incoherent :"+lockState+".");
