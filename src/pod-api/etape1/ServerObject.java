@@ -57,23 +57,26 @@ public class ServerObject{
 	* @return o : up-to-date object
 	**/
 	public synchronized void lock_read(Client_itf c){	
-        	Object o = obj;
-        	while(writing){
-            	try{
-                	wait();
-            	}catch(InterruptedException r){}
-        	}
-		    writing = true;
-        	if(lockState==State.WL){
-            		try{//only on reader should enter here
-                		obj = writer.reduce_lock(this.id); 
-            		}catch(RemoteException r){}
-        	}
-        	lockState = State.RL;
-        	writer=null;
-        	readerList.add(c); 
-		    writing = false;
-
+      	Object o = obj;
+      	while(writing){
+           	try{
+               	wait();
+            }catch(InterruptedException r){}
+        }
+		writing = true;
+       	if(lockState==State.WL){
+        	try{//only on reader should enter here
+                if(!c.equals(writer)){
+            	    obj = writer.reduce_lock(this.id); 
+                }else{
+                    logger.log(Level.SEVERE,"C'est pas possible");
+                }
+            }catch(RemoteException r){}
+       }
+       lockState = State.RL;
+       	writer=null;
+       	readerList.add(c); 
+	    writing = false;
 	}	
 
 	/**Method lock_writer : similar to lock_write, invalidate both writer
@@ -97,15 +100,19 @@ public class ServerObject{
                 		obj = writer.invalidate_writer(this.id);
                 	}catch(RemoteException ni){}
         	}	
-        	writer = c;
+
         	if(lockState==State.RL){
              		for(Client_itf cli : readerList){
                          try{
-                	    	cli.invalidate_reader(this.id);
+                            if(!c.equals(cli)){//cas RLC->WLT
+                	    	    cli.invalidate_reader(this.id);
+                            }
+
               		  	}catch(RemoteException r){}
             		}
         	} 
-        	readerList.clear();
+         	writer = c;
+            readerList.clear();
        	 	lockState = State.WL;
         	writing = false;
         	/*if(waitingWriter==0){

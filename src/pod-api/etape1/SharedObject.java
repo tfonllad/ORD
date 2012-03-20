@@ -13,6 +13,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	private static Logger logger;
     private ReentrantLock lock;
     private Condition available;
+    private Object mutex;
     private boolean busy;
 	public enum State{	
 		NL,
@@ -31,17 +32,20 @@ public class SharedObject implements Serializable, SharedObject_itf {
         this.busy = false;
         this.lock = new ReentrantLock();
         this.available = lock.newCondition();
+        this.mutex = new Object();
 
 		logger = Logger.getLogger("SharedObject");
-		logger.setLevel(null);
+	    logger.setLevel(Level.INFO);
 
 	}
 
 	// invoked by the user program on the client node
 	public void lock_read() {
-            boolean update = false;
-            lock.lock();
+        boolean update = false;
+        synchronized(mutex){
             busy = false;
+        }
+        lock.lock();
 		switch(this.lockState){
 			case RLC :
 				this.lockState=State.RLT;
@@ -54,55 +58,64 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 update = true;
 			break;					
 		}
-                lock.unlock();
-                logger.log(Level.WARNING,"Release the mutex with :"+lockState+".");
-                if(update){
-                    this.obj = client.lock_read(this.id);
-                    if(busy){
-                        logger.log(Level.WARNING,"re-ask for RLT");
-                        this.lock_read();
-				    }else{
-                        this.lockState=State.RLT;
-                        logger.log(Level.INFO,"I can read with "+lockState+".");
-                    }
-
+        lock.unlock();
+        logger.log(Level.FINE,"Release the mutex with :"+lockState+".");
+        if(update){
+            this.obj = client.lock_read(this.id);
+            synchronized(mutex){
+                if(busy){
+                    logger.log(Level.WARNING,"re-ask for RLT");
+                    this.lock_read();
+		        }else{
+                    this.lockState=State.RLT;
+                    logger.log(Level.INFO,"I can read with "+lockState+".");
                 }
+            }
+        }
 	}
 
 	// invoked by the user program on the client node
 	public void lock_write() {
-                boolean update = false;
-                logger.log(Level.INFO,"asing lock_write before mutex");
-	            lock.lock();
-                busy = false;
-                logger.log(Level.INFO,"asking lock_write after mutex");
-                switch(this.lockState){
-		        case WLC:
-                        this.lockState=State.WLT;
-                        logger.log(Level.INFO,"writing with cache");
-	    	        break;
-		        default: 	
-                        update = true;
-               break;
-	        }
-                lock.unlock();
-                logger.log(Level.WARNING,"Release the mutex with :"+lockState+".");
-                if(update){
-                        this.obj = client.lock_write(this.id);
-                        if(busy){
-                            logger.log(Level.WARNING,"re-ask for WLT");
-                            this.lock_write();
-                        }else{
-                            this.lockState=State.WLT;
-                            logger.log(Level.INFO,"I can write with: "+lockState+".");
-                        }
+        boolean update = false;
+        logger.log(Level.FINE,"asing lock_write before mutex");
+        synchronized(mutex){
+	        busy = false;
+        }
+        lock.lock();
+        logger.log(Level.FINE,"asking lock_write after mutex");
+        switch(this.lockState){
+            case WLC:
+                this.lockState=State.WLT;
+                logger.log(Level.INFO,"writing with cache");
+	        break;
+		    default: 	
+                update = true;
+            break;
+	    }
+        lock.unlock();
+        logger.log(Level.FINE,"Release the mutex with :"+lockState+".");
+        if(update){
+            logger.log(Level.INFO,"avant propagation : busy ="+busy+".");
+            this.obj = client.lock_write(this.id);
+            logger.log(Level.INFO,"après propagation : busy ="+busy+".");
+            synchronized(mutex){
+                if(busy){
+                    logger.log(Level.WARNING,"re-ask for WLT");
+                    this.lock_write();
+                }else{
+                    this.lockState=State.WLT;
+                    logger.log(Level.INFO,"I can write with: "+lockState+".");
                 }
-        } 
+            }
+        }
+    } 
 
 	// invoked by the user program on the client node
 	public synchronized void unlock(){
+        logger.log(Level.WARNING,"Unlock before mutex :"+lockState+".");
             this.lock.lock();
-		switch(this.lockState){
+	        logger.log(Level.WARNING,"Unlock after mutex :"+lockState+".");
+            switch(this.lockState){
 			case RLT:
 			lockState = State.RLC;
 			break;
@@ -110,12 +123,13 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			lockState = State.WLC;
 			case RLT_WLC:
 			lockState = State.WLC;	
-                        break;
-                        default:
-                            logger.log(Level.WARNING,"Unlock with : "+lockState+".");
-                        break;
+            break;
+            default:
+            logger.log(Level.WARNING,"Unlock with : "+lockState+".");
+            break;
 		}
-                this.available.signal();	 
+                this.available.signal();	
+                logger.log(Level.WARNING,"SIGNAL");
                 this.lock.unlock();
 	}
 
@@ -123,62 +137,62 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public synchronized Object reduce_lock() {
 		this.lock.lock();
          switch(this.lockState){
-                        case WLT:
+            case WLT:
 		        while(this.lockState==State.WLT){
 			        try{		   
 				        this.available.await();
-		        	 }catch(InterruptedException i){}
+		            }catch(InterruptedException i){}
 		        }
-                        this.lockState = State.RLC;	
+                this.lockState = State.RLC;	
 			break;
 			case RLT_WLC:
-			this.lockState=State.RLT;
+			    this.lockState=State.RLT;
 			break;
 			case WLC:
-			this.lockState=State.RLC;
+			    this.lockState=State.RLC;
 			break;
 			default: 
-                        logger.log(Level.SEVERE,"reduce : Lock incoherent :"+lockState+".");
+                logger.log(Level.SEVERE,"reduce : Lock incoherent :"+lockState+".");
             break;
 		}
-        busy = true;        logger.log(Level.INFO,"I was <b>reduced</b> to "+this.lockState+".");
+        busy = true; 
+        logger.log(Level.INFO,"I was <b>reduced</b> to "+this.lockState+".");
 		this.lock.unlock();
 		return obj;
 	}
-        public synchronized Object invalidate_writer(){
-            this.lock.lock();
-            
-                switch(this.lockState){
-                    case WLT:
-                        while(this.lockState==State.WLT){
+    public synchronized Object invalidate_writer(){
+        this.lock.lock();
+        switch(this.lockState){
+            case WLT:
+                while(this.lockState==State.WLT){
 			        try{		   
-			                this.available.await();
-		                }catch(InterruptedException i){}
-		        }
-                    break;
-                    case RLT_WLC:
-                        while(this.lockState==State.RLT_WLC){
- 			  try{
-                                this.available.await();
-		              }catch(InterruptedException i){}
-                        }
-                    break;
-                    case WLC:
-                        //do nothing
-                    break;
-                    default:
-                        logger.log(Level.SEVERE,"inv_writer: Lock incoherent :"+lockState+".");
-                    break;
+			            this.available.await();
+		            }catch(InterruptedException i){}
+		        }   
+            break;
+            case RLT_WLC:
+                while(this.lockState==State.RLT_WLC){
+ 			        try{
+                        this.available.await();
+		            }catch(InterruptedException i){}
                 }
-                this.lockState = State.NL;
-                busy = true;
-                this.lock.unlock();
-                return obj;
+                break;
+                case WLC:
+                        //do nothing
+                break;
+                default:
+                    logger.log(Level.SEVERE,"inv_writer: Lock incoherent :"+lockState+".");
+                break;
         }
+        this.lockState = State.NL;
+        busy = true;
+        logger.log(Level.INFO,"i was <b>invalidated</b> as a writer");
+        this.lock.unlock();
+        return obj;
+    }
 
         public synchronized void invalidate_reader(){
-                this.lock.lock();
-                
+                this.lock.lock(); 
                 switch(this.lockState){
                     case RLT:
                         while(this.lockState==State.RLT){
@@ -196,6 +210,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 }
                 this.lockState = State.NL;
                 busy = true;
+                logger.log(Level.INFO,"i was <b>invalidated</b> as a reader");
                 this.lock.unlock();
         }
         
