@@ -77,7 +77,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// invoked by the user program on the client node
 	public void lock_write() {
         boolean update = false;
-        logger.log(Level.FINE,"asing lock_write before mutex");
+        logger.log(Level.FINE,"asking lock_write before mutex");
         synchronized(mutex){
 	        busy = false;
         }
