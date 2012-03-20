@@ -32,7 +32,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
         this.lock = new ReentrantLock();
         this.available = lock.newCondition();
 
-
 		logger = Logger.getLogger("SharedObject");
 	    logger.setLevel(Level.INFO);
 
@@ -41,11 +40,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// invoked by the user program on the client node
 	public void lock_read() {
         boolean update = false;
-   /*     synchronized(mutex){
-            busy = false;
-        }*/
-        logger.log(Level.INFO,"entering lock_read");
+        logger.log(Level.INFO,"lock_read()"+this.lockState);
         lock.lock();
+        logger.log(Level.INFO,"lock_read : taking mutex : "+this.lockState);
 		switch(this.lockState){
 			case RLC :
 				this.lockState=State.RLT;
@@ -60,23 +57,28 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			break;					
 		}
         lock.unlock();
-        logger.log(Level.FINE,"Release the mutex with :"+lockState+".");
+        logger.log(Level.FINE,"lock_read : release the lock with :"+lockState+".");
         if(update){
-        	logger.log(Level.INFO,"asking lock_read");
-        	
-        	//NL
+            logger.log(Level.INFO,"Updating lockState to RLT");
         	this.lockState=State.RLT;
+            logger.log(Level.INFO,"Lockstate was updated to "+lockState);
+            if(this.lockState!=State.RLT){
+                logger.log(Level.SEVERE,"Lock = "+lockState+" instead of RLT");
+            }
             this.obj = client.lock_read(this.id);
-            
+            if(this.lockState!=State.RLT){
+                logger.log(Level.SEVERE,"Lock = "+lockState+" instead of RLT");
+            }
+            logger.log(Level.INFO,"lock_read(): end with "+lockState);
          }
 	}
 
 	// invoked by the user program on the client node
 	public void lock_write() {
         boolean update = false;
-        logger.log(Level.FINE,"asking lock_write before mutex");
+        logger.log(Level.FINE,"lock_write() "+this.lockState+".");
         lock.lock();
-        logger.log(Level.FINE,"asking lock_write after mutex");
+        logger.log(Level.FINE,"lock_write : taking mutex "+this.lockState+".");
         switch(this.lockState){
             case WLC:
                 this.lockState=State.WLT;
@@ -87,29 +89,27 @@ public class SharedObject implements Serializable, SharedObject_itf {
             break;
 	    }
         lock.unlock();
-        logger.log(Level.FINE,"Release the mutex with :"+lockState+".");
+        logger.log(Level.FINE,"lock_write : the mutex with :"+lockState+".");
         if(update){
-        	logger.log(Level.INFO,"asking lock_write");
+        	logger.log(Level.INFO,"Updating lock to WLT "+lockState+".");
         	this.lockState=State.WLT;
-            this.obj = client.lock_write(this.id);
-            
-          /*  synchronized(mutex){
-                if(busy){
-                    logger.log(Level.WARNING,"re-ask for WLT");
-                    this.lock_write();
-                }else{
-                    this.lockState=State.WLT;
-                    logger.log(Level.INFO,"I can write with: "+lockState+".");
-                }
-            }*/
+            if(lockState!=State.WLT){
+                logger.log(Level.SEVERE,"Lock = "+this.lockState+" instead of WLT");
+            }
+            logger.log(Level.INFO,"LockState was updated to "+lockState+".");
+            this.obj = client.lock_write(this.id); 
+            if(lockState!=State.WLT){
+                logger.log(Level.SEVERE,"Lock = "+this.lockState+" instead of WLT");
+            }
+            logger.log(Level.INFO,"lock_write() : end with "+lockState+".");
         }
     } 
 
 	// invoked by the user program on the client node
 	public void unlock(){
-            logger.log(Level. INFO,"Unlock before mutex :"+lockState+".");
+            logger.log(Level. INFO,"unlock() "+lockState+".");
             this.lock.lock();
-            logger.log(Level. INFO,"Unlock after mutex :"+lockState+".");
+            logger.log(Level. INFO,"unlock taking  mutex :"+lockState+".");
             switch(this.lockState){
 			case RLT:
 			lockState = State.RLC;
