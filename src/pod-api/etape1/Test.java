@@ -51,7 +51,7 @@ private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 					Thread.sleep(r.nextInt(3));
 				}catch(InterruptedException t){}
 			}
-			System.out.println(name+" final : "+i+".");
+			LOGGER.log(Level.INFO,"Client"+name+", final : "+i+".");
 			//System.exit(0);
 		}else{		
 		try{
@@ -73,7 +73,7 @@ private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 				LOGGER.log(Level.INFO,"Client"+name+" ecrit "+i+".");
 				cpt.unlock();
 			}
-			LOGGER.log(Level.FINE,"Client"+name+", final : "+i+".");
+			LOGGER.log(Level.INFO,"Client"+name+", final : "+i+".");
 		}
 		/*	
 		while(!test.end(cpt)){

@@ -77,6 +77,7 @@ public class ServerObject{
        	writer=null;
        	readerList.add(c); 
 	    writing = false;
+	    notify();
 	}	
 
 	/**Method lock_writer : similar to lock_write, invalidate both writer
@@ -87,11 +88,9 @@ public class ServerObject{
 		Object o = obj;
 
         	while(writing){
-            	waitingWriter+=1;
             	try{
                 	wait();
             	}catch(InterruptedException r){}
-            		waitingWriter-=1;
         	}
             //c is the only client here. There are no // lock_read
         	writing = true;
@@ -106,8 +105,9 @@ public class ServerObject{
                          try{
                             if(!c.equals(cli)){//cas RLC->WLT
                 	    	    cli.invalidate_reader(this.id);
+                            }else{
+                            	logger.log(Level.INFO,"Je ne m'auto-invalide pas !");
                             }
-
               		  	}catch(RemoteException r){}
             		}
         	} 
@@ -115,11 +115,11 @@ public class ServerObject{
             readerList.clear();
        	 	lockState = State.WL;
         	writing = false;
+        	notify();
         	/*if(waitingWriter==0){
             		notify();//signal reader
        	 	}else{
             		notify();//signal next writer. He will wait in invalidation
         	}*/
-            notify();
 	}
 }
