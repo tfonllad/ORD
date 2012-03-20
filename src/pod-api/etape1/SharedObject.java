@@ -42,9 +42,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// invoked by the user program on the client node
 	public void lock_read() {
         boolean update = false;
-        synchronized(mutex){
+   /*     synchronized(mutex){
             busy = false;
-        }
+        }*/
         lock.lock();
 		switch(this.lockState){
 			case RLC :
@@ -62,7 +62,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
         logger.log(Level.FINE,"Release the mutex with :"+lockState+".");
         if(update){
             this.obj = client.lock_read(this.id);
-            synchronized(mutex){
+           /* synchronized(mutex){
                 if(busy){
                     logger.log(Level.WARNING,"re-ask for RLT");
                     this.lock_read();
@@ -71,16 +71,16 @@ public class SharedObject implements Serializable, SharedObject_itf {
                     logger.log(Level.INFO,"I can read with "+lockState+".");
                 }
             }
-        }
+        */}
 	}
 
 	// invoked by the user program on the client node
 	public void lock_write() {
         boolean update = false;
         logger.log(Level.FINE,"asing lock_write before mutex");
-        synchronized(mutex){
+        /*synchronized(mutex){
 	        busy = false;
-        }
+        }*/
         lock.lock();
         logger.log(Level.FINE,"asking lock_write after mutex");
         switch(this.lockState){
@@ -98,7 +98,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
             logger.log(Level.INFO,"avant propagation : busy ="+busy+".");
             this.obj = client.lock_write(this.id);
             logger.log(Level.INFO,"après propagation : busy ="+busy+".");
-            synchronized(mutex){
+          /*  synchronized(mutex){
                 if(busy){
                     logger.log(Level.WARNING,"re-ask for WLT");
                     this.lock_write();
@@ -106,7 +106,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                     this.lockState=State.WLT;
                     logger.log(Level.INFO,"I can write with: "+lockState+".");
                 }
-            }
+            }*/
         }
     } 
 
@@ -155,7 +155,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 logger.log(Level.SEVERE,"reduce : Lock incoherent :"+lockState+".");
             break;
 		}
-        busy = true; 
+        //busy = true; 
         logger.log(Level.INFO,"I was <b>reduced</b> to "+this.lockState+".");
 		this.lock.unlock();
 		return obj;
@@ -185,7 +185,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 break;
         }
         this.lockState = State.NL;
-        busy = true;
+        //busy = true;
         logger.log(Level.INFO,"i was <b>invalidated</b> as a writer");
         this.lock.unlock();
         return obj;
