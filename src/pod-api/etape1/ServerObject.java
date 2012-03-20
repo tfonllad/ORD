@@ -73,11 +73,7 @@ public class ServerObject{
         	writer=null;
         	readerList.add(c); 
 		    writing = false;
-        	/*if(waitingWriter==0){
-            		notify();//signal the next reader.
-        	}else{
-            		notify();
-        	}*/
+
 	}	
 
 	/**Method lock_writer : similar to lock_write, invalidate both writer
