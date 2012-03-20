@@ -91,13 +91,16 @@ public class SharedObject implements Serializable, SharedObject_itf {
         lock.unlock();
         logger.log(Level.FINE,"lock_write : the mutex with :"+lockState+".");
         if(update){
-        	logger.log(Level.INFO,"Updating lock to WLT "+lockState+".");
-        	this.lockState=State.WLT;
+        	logger.log(Level.INFO,"Updating lock to WLT "+lockState+".");      //Avant RLC
+        	this.lockState=State.WLT;                                       
             if(lockState!=State.WLT){
-                logger.log(Level.SEVERE,"Lock = "+this.lockState+" instead of WLT");
+                logger.log(Level.SEVERE,"Lock = "+this.lockState+" instead of WLT"); //Bien mmis à WLT.
             }
             logger.log(Level.INFO,"LockState was updated to "+lockState+".");
-            this.obj = client.lock_write(this.id); 
+            this.obj = client.lock_write(this.id); //BUG : se fait invalider en tant que reader et passe à NL entrant dans la boucle suivante 
+                                                   // A mon avis : se fait invalider en tant que lecteur (d'ou un lock_incohérent = WLT). A voir 
+                                                   // Est-ce qu'il s'auto-invalide, auquel cas, il faut vérifier invalidate_reader mais je crois qu'il y un test pour ce cas.
+                                                   // Quelqu'un d'autre l'invalide mais dans ce cas, le serveur devrait "séquencer" cette autre invalidation et le lock_write.
             if(lockState!=State.WLT){
                 logger.log(Level.SEVERE,"Lock = "+this.lockState+" instead of WLT");
             }
