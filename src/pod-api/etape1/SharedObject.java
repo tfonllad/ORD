@@ -13,8 +13,10 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	private static Logger logger;
     private ReentrantLock lock;
     private Condition available;
+    private Object mutex;
+    private boolean lock1;
 
-	public enum State{	
+    public enum State{	
 		NL,
 		RLT,
 		WLT,
@@ -28,13 +30,12 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.obj = object;
 		this.lockState = State.NL;
 		this.client = c;
-
         this.lock = new ReentrantLock();
         this.available = lock.newCondition();
-
+        this.lock1 = false;
+        this.mutex = new Object();
 		logger = Logger.getLogger("SharedObject");
 	    logger.setLevel(Level.INFO);
-
 	}
 
 	// invoked by the user program on the client node
@@ -91,16 +92,17 @@ public class SharedObject implements Serializable, SharedObject_itf {
         lock.unlock();
         logger.log(Level.FINE,"lock_write : the mutex with :"+lockState+".");
         if(update){
-        	logger.log(Level.INFO,"Updating lock to WLT "+lockState+".");      //Avant RLC
-        	this.lockState=State.WLT;                                       
-            if(lockState!=State.WLT){
-                logger.log(Level.SEVERE,"Lock = "+this.lockState+" instead of WLT"); //Bien mmis à WLT.
-            }
+        	logger.log(Level.INFO,"Updating lock to WLT "+lockState+".");      //Avant RLC 
+            //if(lockState!=State.WLT){
+            //    logger.log(Level.SEVERE,"Lock = "+this.lockState+" instead of WLT"); //Bien mmis à WLT.
+            //}            
+            this.lockState = State.WLT;
             logger.log(Level.INFO,"LockState was updated to "+lockState+".");
             this.obj = client.lock_write(this.id); //BUG : se fait invalider en tant que reader et passe à NL entrant dans la boucle suivante 
-                                                   // A mon avis : se fait invalider en tant que lecteur (d'ou un lock_incohérent = WLT). A voir 
-                                                   // Est-ce qu'il s'auto-invalide, auquel cas, il faut vérifier invalidate_reader mais je crois qu'il y un test pour ce cas.
-                                                   // Quelqu'un d'autre l'invalide mais dans ce cas, le serveur devrait "séquencer" cette autre invalidation et le lock_write.
+            this.lockState = State.WLT;
+            //lockState = State.WLT;//if I was invalidated at $1                                       // A mon avis : se fait invalider en tant que lecteur (d'ou un lock_incohérent = WLT). A voir 
+            // Est-ce qu'il s'auto-invalide, auquel cas, il faut vérifier invalidate_reader mais je crois qu'il y un test pour ce cas.
+            // Quelqu'un d'autre l'invalide mais dans ce cas, le serveur devrait "séquencer" cette autre invalidation et le lock_write.
             if(lockState!=State.WLT){
                 logger.log(Level.SEVERE,"Lock = "+this.lockState+" instead of WLT");
             }
@@ -149,6 +151,12 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			case WLC:
 			    this.lockState=State.RLC;
 			break;
+            case NL:
+                try{		   
+				    this.available.await();
+		        }catch(InterruptedException i){} 
+            break;
+
 			default: 
                 logger.log(Level.SEVERE,"reduce : Lock incoherent :"+lockState+".");
             break;
@@ -178,6 +186,11 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 case WLC:
                         //do nothing
                 break;
+                case NL: //in case of stuff
+                    try{
+                        this.available.await();
+                    }catch(InterruptedException i){}
+                break;
                 default:
                     logger.log(Level.SEVERE,"inv_writer: Lock incoherent :"+lockState+".");
                 break;
@@ -191,23 +204,25 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
         public  void invalidate_reader(){
                 this.lock.lock(); 
-                switch(this.lockState){
+                 switch(this.lockState){
                     case RLT:
                         while(this.lockState==State.RLT){
-			        try{		   
-			                this.available.await();
-		                }catch(InterruptedException i){}
-		        }
+			                try{		   
+			                    this.available.await();
+		                    }catch(InterruptedException i){}
+		                }
                     break;
                     case RLC:
-                        //do nothing
+                            //do nothing
+                    break;
+                    case WLT://reader: after WLT was set but before the lock_write was propagated
+                            this.lockState = State.NL; // basically invalidate reader because he is still a reader;
                     break;
                     default:
-                        logger.log(Level.SEVERE,"inv_reader: Lock incoherent :"+lockState+".");
+                            logger.log(Level.SEVERE,"inv_reader: Lock incoherent :"+lockState+".");
                     break;
-                }
+                }    
                 this.lockState = State.NL;
-
                 logger.log(Level.INFO,"i was <b>invalidated</b> as a reader");
                 this.lock.unlock();
         }
