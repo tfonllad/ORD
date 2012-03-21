@@ -25,7 +25,6 @@ public class ServerObject{
     private boolean reading;
     private boolean writing;
 	private int waitingWriter;
-    private Object mutex;
 
 	/**Constructor ServerObject
 	*@param id : the unique id.
@@ -38,11 +37,10 @@ public class ServerObject{
         this.writer = null;
 		this.readerList = Collections.synchronizedList(new ArrayList<Client_itf>());
 		logger = Logger.getLogger("ServerObject");
-		logger.setLevel(Level.INFO);
+		logger.setLevel(Level.SEVERE);
         //Consistency
 		this.writing = false;
         this.waitingWriter = 0;
-        this.mutex = new Object();
 	}
 
 	public int getID(){

@@ -35,7 +35,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
         this.lock1 = false;
         this.mutex = new Object();
 		logger = Logger.getLogger("SharedObject");
-	    logger.setLevel(Level.INFO);
+	    logger.setLevel(Level.SEVERE);
 	}
 
 	// invoked by the user program on the client node
@@ -67,6 +67,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 logger.log(Level.SEVERE,"Lock = "+lockState+" instead of RLT");
             }
             this.obj = client.lock_read(this.id);
+            this.lockState = State.RLT;
             if(this.lockState!=State.RLT){
                 logger.log(Level.SEVERE,"Lock = "+lockState+" instead of RLT");
             }
@@ -151,11 +152,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			case WLC:
 			    this.lockState=State.RLC;
 			break;
-            case NL:
-                try{		   
-				    this.available.await();
-		        }catch(InterruptedException i){} 
-            break;
 
 			default: 
                 logger.log(Level.SEVERE,"reduce : Lock incoherent :"+lockState+".");
