@@ -25,7 +25,7 @@ public class ServerObject{
     private boolean reading;
     private boolean writing;
 	private int waitingWriter;
-
+    private Object mutex;
 
 	/**Constructor ServerObject
 	*@param id : the unique id.
@@ -42,6 +42,7 @@ public class ServerObject{
         //Consistency
 		this.writing = false;
         this.waitingWriter = 0;
+        this.mutex = new Object();
 	}
 
 	public int getID(){
@@ -65,7 +66,7 @@ public class ServerObject{
         }
 		writing = true;
        	if(lockState==State.WL){
-        	try{//only on reader should enter here
+        	try{
                 if(!c.equals(writer)){
             	    obj = writer.reduce_lock(this.id); 
                 }else{
@@ -96,15 +97,22 @@ public class ServerObject{
         	writing = true;
         	if(lockState==State.WL){
             		try{
-                		obj = writer.invalidate_writer(this.id);
+                        if(writer!=c){
+                		    obj = writer.invalidate_writer(this.id);
+                        }else{
+                            logger.log(Level.WARNING,"writer : auto-invalidation");
+                        }
                 	}catch(RemoteException ni){}
         	}	
-
         	if(lockState==State.RL){
              		for(Client_itf cli : readerList){
                          try{
-                            if(!c.equals(cli)){//cas RLC->WLT
-                	    	    cli.invalidate_reader(this.id);
+                            if((!c.equals(cli))&&(!c.equals(writer))){//cas RLC->WLT // cas possible : un ecrivain viens de prendre le WLT. et cet appel à lieu. 
+                                                                                    //il se prend un invalidate reader avant d'arriver dans le lock_write propagé, -> lock_incoherent. 
+                                                                                    //a priori il ne s'auto-invalide pas donc c'est un autre client qui l'invalide_reader mais il a WLT. 
+                                                                                    //Donc il faut gérer ce cas dans SharedObject mais on ne peut pas attendre en bloquant desssus car on ne peut pas renvoyer l'object.
+                                                                                    //Il faut donc garantir que l'invalidate_reader ai lieu avant le WLT.
+               	    	    cli.invalidate_reader(this.id);
                             }else{
                             	logger.log(Level.INFO,"Je ne m'auto-invalide pas !");
                             }
@@ -115,11 +123,6 @@ public class ServerObject{
             readerList.clear();
        	 	lockState = State.WL;
         	writing = false;
-        	notify();
-        	/*if(waitingWriter==0){
-            		notify();//signal reader
-       	 	}else{
-            		notify();//signal next writer. He will wait in invalidation
-        	}*/
+        	notify();	
 	}
 }
