@@ -1,13 +1,34 @@
+public class Compteur {
+    
+    public static void main(String argv[]) {
+ 
+        Client.init();
+        SharedObject x;
+        
+        if (Integer.parseInt(argv[0]) == -1) {
+            x = Client.create(new Entier(0));
+            Client.register("COMPTEUR", x);
+            System.exit(0);
+        }
+        x = Client.lookup("COMPTEUR");
+        
+        if (x == null) {
+            System.out.println("ERROR : Compteur devrait etre cree");
+        }
+        int i;
+        int max = Integer.parseInt(argv[0]);
+        
+        for (i = 0; i < max; i++) {
+             x.lock_write();
+             System.out.println("Value : " + ((Entier) x.obj).getCompteur());
+            ((Entier) x.obj).incr();
+            x.unlock();
 
-public class Compteur implements java.io.Serializable{
-	public int cpt;
-	public Compteur(){
-		this.cpt = 0;
-	}
-	public int get(){
-		return this.cpt;
-	}
-	public void addOne(){
-		this.cpt = this.cpt+1;
-	}
+            x.lock_read();
+            ((Entier) x.obj).getCompteur();
+            x.unlock();
+        }
+        System.out.println("ENDING");
+    }
 }
+

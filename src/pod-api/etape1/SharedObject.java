@@ -33,7 +33,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
         this.available = lock.newCondition();
 
 		logger = Logger.getLogger("SharedObject");
-	    logger.setLevel(Level.INFO);
+	    logger.setLevel(Level.SEVERE);
 
 	}
 
@@ -66,6 +66,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 logger.log(Level.SEVERE,"Lock = "+lockState+" instead of RLT");
             }
             this.obj = client.lock_read(this.id);
+            this.lockState=State.RLT;
             if(this.lockState!=State.RLT){
                 logger.log(Level.SEVERE,"Lock = "+lockState+" instead of RLT");
             }
@@ -98,7 +99,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
             }
             logger.log(Level.INFO,"LockState was updated to "+lockState+".");
             this.obj = client.lock_write(this.id); //BUG : se fait invalider en tant que reader et passe à NL entrant dans la boucle suivante 
-                                                   // A mon avis : se fait invalider en tant que lecteur (d'ou un lock_incohérent = WLT). A voir 
+            this.lockState = State.WLT;            // A mon avis : se fait invalider en tant que lecteur (d'ou un lock_inctohérent = WLT). A voir 
                                                    // Est-ce qu'il s'auto-invalide, auquel cas, il faut vérifier invalidate_reader mais je crois qu'il y un test pour ce cas.
                                                    // Quelqu'un d'autre l'invalide mais dans ce cas, le serveur devrait "séquencer" cette autre invalidation et le lock_write.
             if(lockState!=State.WLT){
