@@ -48,14 +48,24 @@ public class ServerObject{
 	**/
 	public synchronized void lock_read(Client_itf c){	
       	Object o = obj;
-       	if(lockState==State.WL){
-            try{
-       	        obj = writer.reduce_lock(this.id); 
-            }catch(RemoteException r){}
-         } 
-        
-        lockState = State.RL;
-        this.readerList.add(c);
+        switch(this.lockState){
+            case WL :
+                try{
+       	            obj = writer.reduce_lock(this.id); 
+                }catch(RemoteException r){}
+                lockState = State.RL;
+                writer = null;
+            break;
+
+            case NL :
+                lockState = State.RL;
+            break;
+
+            case RL:
+                ////
+            break;
+        }
+     this.readerList.add(c);
 	}	
 
 	/**Method lock_writer : similar to lock_write, invalidate both writer
@@ -72,17 +82,19 @@ public class ServerObject{
                         cli.invalidate_reader(this.id);
                     }catch(RemoteException r){}
                 }
+                this.lockState = State.WL;
             break;
             case WL :
                 try{
                     obj = writer.invalidate_writer(this.id);
                 }catch(RemoteException r){}
             break;
-       
+            case NL:
+                this.lockState = State.WL;
+             break;
             default : break;
         }
       	writer = c;
         readerList.clear();
-     	lockState = State.WL;        
 	}
 }

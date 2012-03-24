@@ -14,7 +14,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
     private ReentrantLock lock;
     private Condition available;
     private Condition wait;
-    private boolean busy;
 
     public enum State{	
 		NL,
@@ -33,19 +32,19 @@ public class SharedObject implements Serializable, SharedObject_itf {
         this.lock = new ReentrantLock();
         this.available = lock.newCondition();
         this.wait = lock.newCondition();
-        this.busy = false;
 
 		logger = Logger.getLogger("SharedObject");
-	    logger.setLevel(Level.SEVERE);
+	    logger.setLevel(Level.INFO);
 	}
 
 	// invoked by the user program on the client node
 	public void lock_read() {
         boolean update = false;
-        logger.log(Level.INFO,"lock_read()"+this.lockState);
+
         //////////
         lock.lock();
-		switch(this.lockState){
+	        logger.log(Level.INFO,"lock_read() :"+this.lockState);
+            switch(this.lockState){
 			case RLC :
 				this.lockState=State.RLT;
                 logger.log(Level.INFO,"reading in cache");
@@ -66,17 +65,18 @@ public class SharedObject implements Serializable, SharedObject_itf {
         /////////
         logger.log(Level.FINE,"lock_read : release the lock with :"+lockState+".");
         if(update){
+            logger.log(Level.FINE,"lock_read : before propagation :"+lockState+".");
             this.obj = client.lock_read(this.id);
-         }
+            logger.log(Level.INFO,"lock_read : after lock_read :"+lockState+".");
+        }
 	}
 
 	// invoked by the user program on the client node
 	public void lock_write() {
         boolean update = false;
-        logger.log(Level.FINE,"lock_write() "+this.lockState+".");
         ///////////
         lock.lock();
-       
+        logger.log(Level.INFO,"lock_write() "+this.lockState+".");
         switch(this.lockState){
             case WLC:
                 this.lockState=State.WLT;
@@ -94,19 +94,23 @@ public class SharedObject implements Serializable, SharedObject_itf {
             break; 
 
 	    }
+        logger.log(Level.INFO,"lock_write : release the lock with :"+lockState+".");
         lock.unlock();
         ////////
-        
+             
         if(update){
+            logger.log(Level.FINE,"lock_write : before propagation :"+lockState+".");
             this.obj = client.lock_write(this.id);
+            logger.log(Level.INFO,"lock_write : after propagation :"+lockState+".");
         }
+
     } 
 
 	// invoked by the user program on the client node
 	public void unlock(){
-        logger.log(Level. INFO,"unlock() "+lockState+".");
+        logger.log(Level. FINE,"unlock() "+lockState+".");
         this.lock.lock();
-        logger.log(Level. INFO,"unlock taking  mutex :"+lockState+".");
+        logger.log(Level.FINE,"unlock taking  mutex :"+lockState+".");
         switch(this.lockState){
 	        case RLT:
 			    lockState = State.RLC;
@@ -121,7 +125,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
             break;
 		}
        this.available.signal();	
-       logger.log(Level.WARNING,"SIGNAL");
+       logger.log(Level.WARNING,"SIGNAL : "+ this.lockState);
        this.lock.unlock();
 	}
 
@@ -182,33 +186,40 @@ public class SharedObject implements Serializable, SharedObject_itf {
                     logger.log(Level.SEVERE,"inv_writer: Lock incoherent :"+lockState+".");
            break;
         }
-        logger.log(Level.INFO,"i was <b>invalidated</b> as a writer");
+        logger.log(Level.INFO,"i was <b>invalidated</b> as a writer : "+this.lockState+".");
         this.lock.unlock();
         return obj;
     }
 
     public void invalidate_reader(){
         this.lock.lock(); 
+        logger.log(Level.INFO,"Invalidate reader of lock : "+this.lockState+".");
          switch(this.lockState){
              case RLT:
                  while(this.lockState==State.RLT){
 			        try{		   
-			            this.available.await();
+			            this.available.await(); // si entre temps un lock_write a lieu et ce thread est libéré avant propagation
 		            }catch(InterruptedException i){}
 		         }
-                 this.lockState = State.NL;
+                 if(this.lockState==State.WLT){
+                    logger.log(Level.WARNING,"LOL");
+                 }else{
+                    this.lockState = State.NL;
+                 }
               break;
               case RLC:
                 this.lockState = State.NL;
               break;
-              case WLT ://still a reader
-                    // do nothing  
+              case WLT ://still a reader : happens when reader is set to WLT, and invalidated before the lock_write is propagated
+                        //to the server. He will invalidate any other writer/reader when he tooks the lock.
+                        // do nothing  
+                        logger.log(Level.WARNING,"STUFF");
               break;
               default:
                 logger.log(Level.SEVERE,"inv_reader: Lock incoherent :"+lockState+".");
               break;
         }    
-        logger.log(Level.INFO,"i was <b>invalidated</b> as a reader");      
+        logger.log(Level.INFO,"i was <b>invalidated</b> as a reader : "+this.lockState+".");      
         this.lock.unlock();
     }
         
