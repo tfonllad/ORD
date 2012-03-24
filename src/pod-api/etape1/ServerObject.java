@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-
 public class ServerObject{
 
 	//identification	
@@ -16,11 +15,6 @@ public class ServerObject{
 	public Object obj;		
 	private static Logger logger;	
 	private State lockState;
-
-    //Consistency
-    private boolean reading;
-    private boolean writing;
-	private int waitingWriter;
 
 	/**Constructor ServerObject
 	*@param id : the unique id.
@@ -35,7 +29,7 @@ public class ServerObject{
 		logger = Logger.getLogger("ServerObject");
 		logger.setLevel(Level.SEVERE);
         //Consistency
-		this.writing = false; 
+ 
         this.lockState = State.NL;
 	}
 
@@ -54,22 +48,14 @@ public class ServerObject{
 	**/
 	public synchronized void lock_read(Client_itf c){	
       	Object o = obj;
-        while(writing){
-            try{
-                wait();
-            }catch(InterruptedException e){}
-        }
-		writing = true;
        	if(lockState==State.WL){
             try{
        	        obj = writer.reduce_lock(this.id); 
             }catch(RemoteException r){}
          } 
-        this.writer = null;
+        
         lockState = State.RL;
         this.readerList.add(c);
-	    writing = false;
-        notify();
 	}	
 
 	/**Method lock_writer : similar to lock_write, invalidate both writer
@@ -78,14 +64,6 @@ public class ServerObject{
 	**/
 	public synchronized void lock_write(Client_itf c){	
 		Object o = obj;
-        while(writing){
-            try{    
-                wait();
-            }catch(InterruptedException e){
-            }
-        }
-            //c is the only client here. There are no // lock_read
-        writing = true;
         switch(lockState){
             case RL :
                 this.readerList.remove(c);
@@ -105,8 +83,6 @@ public class ServerObject{
         }
       	writer = c;
         readerList.clear();
-     	lockState = State.WL;
-      	writing = false;
-        notify();
+     	lockState = State.WL;        
 	}
 }
