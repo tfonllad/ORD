@@ -16,15 +16,18 @@ public class Compteur {
             int max = Integer.parseInt(argv[0]);
             for (i = 0; i < max; i++) {
                 x.lock_write();
-                System.out.println("Value : " + ((Entier) x.obj).getCompteur());
+                //System.out.println("Value : " + ((Entier) x.obj).getCompteur());
                 ((Entier) x.obj).incr();
                 x.unlock();
 
-               /* x.lock_read();
+                x.lock_read();
                 ((Entier)x.obj).getCompteur();
-                x.unlock();*/
+                x.unlock();
             }
-           System.out.println("ENDING");
+                x.lock_read(); 
+                System.out.println("ENDING : "+((Entier)x.obj).getCompteur());
+                x.unlock();
+          
         }
 }
 

@@ -67,7 +67,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	**/
 	public int lookup(String name) throws java.rmi.RemoteException{
 		int id;
-		System.out.println("lookup");
+        logger.log(Level.INFO,"lookup");
 		if(!this.hmName.containsKey(name)){
 			logger.log(Level.WARNING,"Name not found");
 			id = 0;
