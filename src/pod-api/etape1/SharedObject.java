@@ -174,6 +174,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
                         this.available.await();
 		            }catch(InterruptedException i){}
                 }
+                this.lockState = State.NL;
            break;
           
            default:
