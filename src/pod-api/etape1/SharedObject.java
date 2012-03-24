@@ -154,6 +154,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.lock.unlock();
 		return obj;
 	}
+
     public Object invalidate_writer(){
         this.lock.lock();
         switch(this.lockState){
@@ -181,13 +182,12 @@ public class SharedObject implements Serializable, SharedObject_itf {
                     logger.log(Level.SEVERE,"inv_writer: Lock incoherent :"+lockState+".");
            break;
         }
-
         logger.log(Level.INFO,"i was <b>invalidated</b> as a writer");
         this.lock.unlock();
         return obj;
     }
 
-    public synchronized void invalidate_reader(){
+    public void invalidate_reader(){
         this.lock.lock(); 
          switch(this.lockState){
              case RLT:
