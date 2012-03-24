@@ -34,7 +34,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
         this.wait = lock.newCondition();
 
 		logger = Logger.getLogger("SharedObject");
-	    logger.setLevel(Level.INFO);
+	    logger.setLevel(Level.SEVERE);
 	}
 
 	// invoked by the user program on the client node
