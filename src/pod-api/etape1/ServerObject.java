@@ -35,8 +35,8 @@ public class ServerObject{
 		logger = Logger.getLogger("ServerObject");
 		logger.setLevel(Level.SEVERE);
         //Consistency
-		this.writing = false;
-        this.waitingWriter = 0;
+		this.writing = false; 
+        this.lockState = State.NL;
 	}
 
 	public int getID(){
@@ -47,16 +47,17 @@ public class ServerObject{
 		WL,
 		RL;
 	}
+
 	/**Method lock_read : called by client to get lock on the object.The
  	* method call reduce_lock on the writer if not null
 	* @return o : up-to-date object
 	**/
 	public synchronized void lock_read(Client_itf c){	
       	Object o = obj;
-      	while(writing){
-           	try{
-               	wait();
-            }catch(InterruptedException r){}
+        while(writing){
+            try{
+                wait();
+            }catch(InterruptedException e){}
         }
 		writing = true;
        	if(lockState==State.WL){
@@ -68,7 +69,7 @@ public class ServerObject{
         lockState = State.RL;
         this.readerList.add(c);
 	    writing = false;
-	    notify();
+        notify();
 	}	
 
 	/**Method lock_writer : similar to lock_write, invalidate both writer
@@ -77,31 +78,35 @@ public class ServerObject{
 	**/
 	public synchronized void lock_write(Client_itf c){	
 		Object o = obj;
-
-        	while(writing){
-            	try{
-                	wait();
-            	}catch(InterruptedException r){}
-        	}
+        while(writing){
+            try{    
+                wait();
+            }catch(InterruptedException e){
+            }
+        }
             //c is the only client here. There are no // lock_read
-        	writing = true;
-        	if(lockState==State.WL){
+        writing = true;
+        switch(lockState){
+            case RL :
+                this.readerList.remove(c);
+           	    for(Client_itf cli : readerList){
+                    try{
+                        cli.invalidate_reader(this.id);
+                    }catch(RemoteException r){}
+                }
+            break;
+            case WL :
                 try{
                     obj = writer.invalidate_writer(this.id);
                 }catch(RemoteException r){}
-            }
-        	if(lockState==State.RL){
-                this.readerList.remove(c);
-             	for(Client_itf cli : readerList){
-                    try{
-               	        cli.invalidate_reader(this.id);
-                    }catch(RemoteException r){}
-                }
-            }
-         	writer = c;
-            readerList.clear();
-       	 	lockState = State.WL;
-        	writing = false;
-        	notify();	
+            break;
+       
+            default : break;
+        }
+      	writer = c;
+        readerList.clear();
+     	lockState = State.WL;
+      	writing = false;
+        notify();
 	}
 }

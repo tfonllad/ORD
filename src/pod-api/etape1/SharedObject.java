@@ -45,12 +45,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
         logger.log(Level.INFO,"lock_read()"+this.lockState);
         //////////
         lock.lock();
-        while(this.busy){
-            try{
-                this.wait.await();
-            }catch(InterruptedException e){}
-        }
-        logger.log(Level.INFO,"lock_read : taking mutex : "+this.lockState);
 		switch(this.lockState){
 			case RLC :
 				this.lockState=State.RLT;
@@ -82,13 +76,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
         logger.log(Level.FINE,"lock_write() "+this.lockState+".");
         ///////////
         lock.lock();
-        while(this.busy){
-            try{
-                this.wait.await();
-            }catch(InterruptedException e){}
-        }
-        
-        
+       
         switch(this.lockState){
             case WLC:
                 this.lockState=State.WLT;
@@ -140,7 +128,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// callback invoked remotely by the server
 	public Object reduce_lock() {
         this.lock.lock();
-        this.busy = true;
+
          switch(this.lockState){
             case WLT:
 		        while(this.lockState==State.WLT){
@@ -162,15 +150,12 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 		}
         logger.log(Level.INFO,"I was <b>reduced</b> to "+this.lockState+".");
-        this.busy = false;
-        this.wait.signal();
+
 		this.lock.unlock();
 		return obj;
 	}
     public Object invalidate_writer(){
         this.lock.lock();
-        this.busy = true;
-
         switch(this.lockState){
            case WLT:
                 while(this.lockState==State.WLT){
@@ -190,13 +175,12 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		            }catch(InterruptedException i){}
                 }
            break;
-
+          
            default:
                     logger.log(Level.SEVERE,"inv_writer: Lock incoherent :"+lockState+".");
            break;
         }
-                busy = false;
-        this.wait.signal();
+
         logger.log(Level.INFO,"i was <b>invalidated</b> as a writer");
         this.lock.unlock();
         return obj;
@@ -204,7 +188,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
     public synchronized void invalidate_reader(){
         this.lock.lock(); 
-        this.busy = true;
          switch(this.lockState){
              case RLT:
                  while(this.lockState==State.RLT){
@@ -217,13 +200,14 @@ public class SharedObject implements Serializable, SharedObject_itf {
               case RLC:
                 this.lockState = State.NL;
               break;
+              case WLT ://still a reader
+                    // do nothing  
+              break;
               default:
                 logger.log(Level.SEVERE,"inv_reader: Lock incoherent :"+lockState+".");
               break;
         }    
         logger.log(Level.INFO,"i was <b>invalidated</b> as a reader");      
-        this.busy = false;
-        this.wait.signal();
         this.lock.unlock();
     }
         
