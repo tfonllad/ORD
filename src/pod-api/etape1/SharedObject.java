@@ -65,7 +65,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
         if(update){
             logger.log(Level.FINE,"lock_read : before propagation :"+lockState+".");
             this.obj = client.lock_read(this.id);
-            logger.log(Level.INFO,"lock_read : after lock_read :"+lockState+".");
         }
 	}
 
