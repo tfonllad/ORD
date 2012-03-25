@@ -1,13 +1,42 @@
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.io.IOException;
 
-public class Compteur implements java.io.Serializable{
-	public int cpt;
-	public Compteur(){
-		this.cpt = 0;
-	}
-	public int get(){
-		return this.cpt;
-	}
-	public void addOne(){
-		this.cpt = this.cpt+1;
-	}
+public class Compteur {
+    private final static Logger LOGGER = Logger.getLogger(Compteur.class.getName());
+
+     public static void main(String argv[]) {
+        Client.init();
+        LOGGER.setLevel(Level.INFO);
+        SharedObject x;
+        try{
+            MyLogger.setup("Compteur_"+argv[1]);
+        }catch(IOException e){}
+        if (Integer.parseInt(argv[0]) == -1) {
+            x = Client.create(new Entier(0));
+            Client.register("COMPTEUR", x);
+            System.exit(0);
+        }
+        x = Client.lookup("COMPTEUR");
+        if (x == null) {
+            LOGGER.log(Level.SEVERE,"ERROR : Compteur devrait etre cree");
+        }
+        int i;
+        int max = Integer.parseInt(argv[0]);
+        for (i = 0; i < max; i++) {
+            x.lock_write();
+            LOGGER.log(Level.FINE,"Value : " + ((Entier) x.obj).getCompteur());
+            ((Entier) x.obj).incr();
+            x.unlock();
+
+            x.lock_read();
+            ((Entier)x.obj).getCompteur();
+            x.unlock();
+            }
+        x.lock_read(); 
+        LOGGER.log(Level.INFO,"ENDING : "+((Entier)x.obj).getCompteur());
+        x.unlock();
+          
+        }
 }
+

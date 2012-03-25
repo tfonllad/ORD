@@ -206,7 +206,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		SharedObject so=null;
 		
 		try{
-			System.out.println("Appel server.lookup()");
+            logger.log(Level.FINE,"Appel Server.lookup()");
 			id = server.lookup(name);
 			
 			if(hmID.containsKey(id)){

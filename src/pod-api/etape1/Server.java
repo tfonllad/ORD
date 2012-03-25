@@ -29,7 +29,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		this.cpt = 0;
 		this.mutex = new ReentrantLock();
 		logger = Logger.getLogger("Server");
-		logger.setLevel(Level.WARNING);
+		logger.setLevel(Level.SEVERE);
 	}
 
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
@@ -67,7 +67,7 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 	**/
 	public int lookup(String name) throws java.rmi.RemoteException{
 		int id;
-		System.out.println("lookup");
+        logger.log(Level.INFO,"lookup");
 		if(!this.hmName.containsKey(name)){
 			logger.log(Level.WARNING,"Name not found");
 			id = 0;
