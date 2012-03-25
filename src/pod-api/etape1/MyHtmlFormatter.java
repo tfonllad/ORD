@@ -59,4 +59,4 @@ class MyHtmlFormatter extends Formatter
 	{
 		return "</table>\n  </PRE></BODY>\n</HTML>\n";
 	}
-
+}
