@@ -37,13 +37,8 @@ public class Server extends UnicastRemoteObject implements Server_itf{
      * @throws java.rmi.RemoteException
      */
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException{	
-		logger.log(Level.FINE,"propagation lock_read");
-        //recover the ServerObject with thi id
-		ServerObject so = this.hmID.get(id);
-        //and ask lock_read on it
-		so.lock_read(client);
-		logger.log(Level.FINE,"fin propagation lock_read");
-		return so.obj;
+        this.hmID.get(id).lock_read(client);
+        return this.hmID.get(id).obj;
     }
 
      /** Propagate the lock_write to the Server Object
@@ -52,12 +47,9 @@ public class Server extends UnicastRemoteObject implements Server_itf{
      * @return obj : the up-to-date object
      */  
     public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException{
-		logger.log(Level.FINE,"propagation lock_write");
-		ServerObject so = this.hmID.get(id);
-        ServerObject so_prev = so;
-		so.lock_write(client); 
-		logger.log(Level.FINE,"fin propagation lock_write");
-		return so.obj;
+		this.hmID.get(id).lock_write(client);
+        return this.hmID.get(id).obj;
+		
 	}
 	
 	/**Method lookup : return the ID of object "name" if it was registered,
@@ -71,10 +63,8 @@ public class Server extends UnicastRemoteObject implements Server_itf{
         logger.log(Level.INFO,"lookup");
 		if(!this.hmName.containsKey(name)){
             //the object is not on the server
-			logger.log(Level.WARNING,"Name not found");
 			id = 0;
 		}else{
-			logger.log(Level.INFO,"Name found");	
 			id = this.hmName.get(name);
 		}
 		return id;		
@@ -107,7 +97,6 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 		cpt = cpt+1;
 		ServerObject so = new ServerObject(cpt,o);
 		this.hmID.put(cpt,so);
-		logger.log(Level.FINE,"Done creating objec. ID ="+cpt+".");
 		return cpt;
 	}
 

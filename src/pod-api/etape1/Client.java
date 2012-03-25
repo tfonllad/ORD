@@ -49,14 +49,12 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		int id;
 		SharedObject so = null;	
 		try{
-            logger.log(Level.FINE,"Appel Server.lookup()");
 			id = server.lookup(name);
 			//if the object was already there
 			if(hmID.containsKey(id)){
                 //we return it
 			 	so = hmID.get(id);
 			}else{
-				logger.log(Level.FINE,"lookup");			
 				if(id==0){
                     //if the object doesn't exist on the server
 					so = null;
@@ -157,46 +155,36 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	}
 
 	// receive a lock reduction request from the server
-	/**Method reduce_lock : called on the client when he has WLC/WLT he will
+	
+    /**Method reduce_lock : called on the client when he has WLC/WLT he will
 	 * keep the right to read but loose WLC/WLT.
 	 *@param id : the id of the targeted object.
-	 *@return o : the up-to-date object given back to the server
+	 *@return the up-to-date object given back to the server
 	**/
+
 	public Object reduce_lock(int id) throws java.rmi.RemoteException {
-		SharedObject so = hmID.get(id);
-		Object o;
-        logger.log(Level.INFO,"lock is getting reduced");
-		o = so.reduce_lock();
-        logger.log(Level.INFO,"lock was reduced");
-		return o;
+		return hmID.get(id).reduce_lock();
 	}
 
+
 	// receive a reader invalidation request from the server
-	/**Method invalidate_reader : release RLT/RLC
+	
+    /**Method invalidate_reader : release RLT/RLC
 	 *@param id : the id of the targeted object.
 	**/
+
 	public void invalidate_reader(int id) throws java.rmi.RemoteException {
-		SharedObject so = hmID.get(id);
-        logger.log(Level.INFO,"reader is getting invalidated");
-		so.invalidate_reader();
-        logger.log(Level.INFO,"reader was invalidater");
+        hmID.get(id).invalidate_reader();
 	}
 
 	// receive a writer invalidation request from the server
+    
 	/**Method invalidate_writer : release WLC/WLT/WLC_RLT
 	 *@param id : the id of the targeted object.
 	 *@return o : the up-to-date object given back to the server
 	**/
-	public Object invalidate_writer(int id) throws java.rmi.RemoteException {
-		SharedObject so = hmID.get(id);
-		Object o;        
-        logger.log(Level.INFO,"writer is getting invalidated");
-		o = so.invalidate_writer();
-        logger.log(Level.INFO,"writer invalidated");
-        if(o==null){
-            logger.log(Level.SEVERE,"writer returned a null object");
-        }
-		return o;
+	public Object invalidate_writer(int id) throws java.rmi.RemoteException {        
+		return hmID.get(id).invalidate_writer();
 	}	
 }
 

@@ -8,7 +8,7 @@ for ((i = 0; i < $1; i += 1)) do
   done
 
   echo "sleeping 10s"
-  sleep 60
+  sleep 180
   echo "end sleep"
   java CompteurRead
   killall java

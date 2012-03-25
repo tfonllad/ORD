@@ -45,7 +45,6 @@ public class ServerObject{
 	/**Method lock_read : reduce_lock on writer, switch state to RL.
 	**/
 	public synchronized void lock_read(Client_itf c){	
-      	Object o = obj;
         try{
             switch(this.lockState){
                 case WL :
@@ -72,8 +71,7 @@ public class ServerObject{
 
 	/**Method lock_writer : invalidate readers and writers and switch state to WL
 	**/
-	public synchronized void lock_write(Client_itf c){	
-		Object o = obj;
+	public synchronized void lock_write(Client_itf c){		
         
         switch(lockState){
             case RL :

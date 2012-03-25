@@ -45,12 +45,10 @@ public class SharedObject implements Serializable, SharedObject_itf {
             logger.log(Level.INFO,"lock_read() :"+this.lockState);
             switch(this.lockState){
 			case RLC :
-				this.lockState=State.RLT;
-                logger.log(Level.INFO,"reading in cache");
+				this.lockState=State.RLT; 
 			break;
 			case WLC:
 				this.lockState=State.RLT_WLC;
-				logger.log(Level.INFO,"reading in cache as previous writer");
 			break;
 			case NL:
                 this.lockState = State.RLT;
@@ -66,7 +64,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
         
         logger.log(Level.FINE,"lock_read : release the lock with :"+lockState+".");
         if(update){
-            logger.log(Level.FINE,"lock_read : before propagation :"+lockState+".");
             this.obj = client.lock_read(this.id);
         }
 	}
@@ -82,7 +79,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
         switch(this.lockState){
             case WLC:
                 this.lockState=State.WLT;
-                logger.log(Level.INFO,"writing with cache");
 	        break;
             case RLC:
                 this.lockState = State.WLT;
@@ -96,27 +92,22 @@ public class SharedObject implements Serializable, SharedObject_itf {
             break; 
 
 	    }
-        logger.log(Level.INFO,"lock_write : release the lock with :"+lockState+".");
         lock.unlock();
         
         //We now request a lock from the server if neede.  
         
         if(update){
-            logger.log(Level.FINE,"lock_write : before propagation :"+lockState+".");
             this.obj = client.lock_write(this.id);
-            logger.log(Level.INFO,"lock_write : after propagation :"+lockState+".");
         }
 
     } 
 
 	// invoked by the user program on the client node
 	public void unlock(){
-        logger.log(Level. FINE,"unlock() "+lockState+".");
         this.lock.lock();
 
         //We update the State
-       
-        logger.log(Level.FINE,"unlock taking  mutex :"+lockState+".");
+        
         switch(this.lockState){
 	        case RLT:
 			    lockState = State.RLC;
@@ -142,7 +133,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public Object reduce_lock() {
         this.lock.lock();
 
-        //W
+         //We update the State
          switch(this.lockState){
             case WLT:
 		        while(this.lockState==State.WLT||this.lockState==State.RLT_WLC){
