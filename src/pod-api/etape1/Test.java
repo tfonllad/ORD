@@ -9,8 +9,8 @@ private static Test test;
 private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 	
 	public void writeLog(){
-		LOGGER.setLevel(Level.WARNING);
-	}
+		LOGGER.setLevel(Level.FINE);
+        }
 		
 	public static void main(String args[]){			
 		String name = args[0];
@@ -40,24 +40,24 @@ private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 				Thread.sleep(2000);
 			}catch(InterruptedException t){}
 	
-			for(int k=0;k<1000;k++){
+			for(int k=0;k<200;k++){
 				cpt.lock_write();
 				((Compteur) cpt.obj).addOne();
 				i = ((Compteur) cpt.obj).get();
 				int l = k + 1;
-				LOGGER.log(Level.SEVERE,"Client"+name+".");
+				LOGGER.log(Level.INFO,"Client"+name+" ecrit "+i+".");
 				cpt.unlock();
 				try{
 					Thread.sleep(r.nextInt(3));
 				}catch(InterruptedException t){}
 			}
-			System.out.println(name+" final : "+i+".");
+			LOGGER.log(Level.INFO,"Client"+name+", final : "+i+".");
 			//System.exit(0);
 		}else{		
 		try{
 			Thread.sleep(3000);
 			}catch(InterruptedException t){}
-			for(int k=0;k<1000;k++){
+			for(int k=0;k<200;k++){
 			
 				cpt.lock_read();
 				i = ((Compteur)cpt.obj).get();
@@ -70,10 +70,10 @@ private static Logger LOGGER = Logger.getLogger(Test.class.getName());
 				((Compteur) cpt.obj).addOne();
 				i = ((Compteur) cpt.obj).get();
 				int l = k+1;
-				LOGGER.log(Level.WARNING,"Client"+name+".");
+				LOGGER.log(Level.INFO,"Client"+name+" ecrit "+i+".");
 				cpt.unlock();
 			}
-			LOGGER.log(Level.SEVERE,"Client"+name+", final : "+i+".");
+			LOGGER.log(Level.INFO,"Client"+name+", final : "+i+".");
 		}
 		/*	
 		while(!test.end(cpt)){

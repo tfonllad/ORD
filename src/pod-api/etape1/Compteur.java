@@ -1,6 +1,6 @@
 
 public class Compteur implements java.io.Serializable{
-	private int cpt;
+	public int cpt;
 	public Compteur(){
 		this.cpt = 0;
 	}

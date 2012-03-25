@@ -166,7 +166,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	private static HashMap<Integer,SharedObject> hmID;
 	private static Server_itf server;
 	private static Client_itf client;	
-	private static Logger logger;	
+	private static Logger logger = Logger.getLogger(Client.class.getName());	
 
 	public Client() throws RemoteException {
 		super();
@@ -182,9 +182,8 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// initialization of the client layer -> OK
 	public static void init() {
-		logger = Logger.getLogger("Client");
-		logger.setLevel(null);
-		hmID = new HashMap<Integer,SharedObject>();
+		logger.setLevel(Level.SEVERE);
+        hmID = new HashMap<Integer,SharedObject>();
 		try{  	
 			client = new Client();	
 			int port = 1099; 
@@ -276,14 +275,15 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 	public static Object lock_read(int id) {
 		Object o = null;
-		logger.log(Level.INFO,"request lock_read");
 		try{
 			o = server.lock_read(id,client);
 		}catch(RemoteException r){
 			logger.log(Level.SEVERE,"Connexion Lost");
 			System.exit(0);
 		}
-		logger.log(Level.INFO,"obtained lock_read");
+        if(o==null){
+            logger.log(Level.SEVERE,"NULL object recovered on LR");
+        }
 		return o;	
 	}
 
@@ -293,14 +293,15 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 	public static Object lock_write(int id) {
 		Object o = null;
-		logger.log(Level.INFO,"request lock_write");
 		try{
 			o = server.lock_write(id,client);
 		}catch(RemoteException r){
 			logger.log(Level.SEVERE,"Connexion Lost");
 			System.exit(0);
 		}
-		logger.log(Level.INFO,"obtained lock_write");
+        if(o==null){
+            logger.log(Level.SEVERE,"NULL object recovered on LW");
+        }
 		return o;
 	}
 
@@ -313,9 +314,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public Object reduce_lock(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
 		Object o;
-		logger.log(Level.INFO,"recieved reduce_lock");
+        logger.log(Level.INFO,"lock is getting reduced");
 		o = so.reduce_lock();
-		logger.log(Level.INFO,"lock was reduced");
+        logger.log(Level.INFO,"lock was reduced");
 		return o;
 	}
 
@@ -325,9 +326,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 	public void invalidate_reader(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
-		logger.log(Level.INFO,"recieved invalidate_reader");
+        logger.log(Level.INFO,"reader is getting invalidated");
 		so.invalidate_reader();
-		logger.log(Level.INFO,"reader was invalidated");
+        logger.log(Level.INFO,"reader was invalidater");
 	}
 
 	// receive a writer invalidation request from the server
@@ -337,10 +338,13 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 	public Object invalidate_writer(int id) throws java.rmi.RemoteException {
 		SharedObject so = hmID.get(id);
-		Object o;
-		logger.log(Level.INFO,"recieved invalidate_writer");
+		Object o;        
+        logger.log(Level.INFO,"writer is getting invalidated");
 		o = so.invalidate_writer();
-		logger.log(Level.INFO,"writer was invalidated");
+        logger.log(Level.INFO,"writer invalidated");
+        if(o==null){
+            logger.log(Level.SEVERE,"writer returned a null object");
+        }
 		return o;
 	}	
 }
