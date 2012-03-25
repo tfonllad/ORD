@@ -39,7 +39,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			logger.log(Level.FINE,"Server found");
 		}catch(Exception e){
 			logger.log(Level.SEVERE,"Server not found");
-			System.exit(0);
+			System.exit(-1);
 		}	
 	}
 
@@ -71,7 +71,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			}
 		}catch(RemoteException r){
 			logger.log(Level.SEVERE,"Connexion Lost");
-			System.exit(0);
+			System.exit(-1);
 		}	
 		return so;
 	}		
@@ -85,7 +85,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			server.register(name,id);
 		}catch(RemoteException r){
 			logger.log(Level.SEVERE,"Connexion Lost");
-			System.exit(0);
+			System.exit(-1);
 		}
 	}
 
@@ -106,7 +106,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 				
 	 	}catch(RemoteException r){
 			logger.log(Level.SEVERE,"Connexion Lost");
-			System.exit(0);
+			System.exit(-1);
 		}
 		return so;		
 		
@@ -127,7 +127,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			o = server.lock_read(id,client);
 		}catch(RemoteException r){
 			logger.log(Level.SEVERE,"Connexion Lost");
-			System.exit(0);
+			System.exit(-1);
 		}
         if(o==null){
             logger.log(Level.SEVERE,"NULL object recovered on LR");
@@ -145,7 +145,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			o = server.lock_write(id,client);
 		}catch(RemoteException r){
 			logger.log(Level.SEVERE,"Connexion Lost");
-			System.exit(0);
+			System.exit(-1);
 		}
         if(o==null){
             logger.log(Level.SEVERE,"NULL object recovered on LW");

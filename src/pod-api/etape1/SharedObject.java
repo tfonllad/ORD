@@ -13,8 +13,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	private static Logger logger;
     private ReentrantLock lock;
     private Condition available;
-    private Condition wait;
-
+    
     public enum State{	
 		NL,
 		RLT,
@@ -31,7 +30,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		this.client = c;
         this.lock = new ReentrantLock();
         this.available = lock.newCondition();
-        this.wait = lock.newCondition();
+        
 		logger = Logger.getLogger("SharedObject");
 	    logger.setLevel(Level.SEVERE);
 	}
@@ -139,7 +138,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 				        this.available.await();
                         //WLT->WLC. lock_write -> WLT 
                         //          lock_read  -> RLT_WLC
-		            }catch(InterruptedException i){}
+		            }catch(InterruptedException i){
+                        i.printStackTrace();  
+                    }
 		        }
                 if(this.lockState != State.WLC){
                     logger.log(Level.SEVERE,"Lock is : "+this.lockState+" instead of WLC");
@@ -172,7 +173,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			            this.available.await();
                         //WLT->WLC : lock_write -> WLT
                         //           lock_read -> RLT_WLC
-		            }catch(InterruptedException i){}
+		            }catch(InterruptedException i){
+                        i.printStackTrace();
+                    }
                 }
                 if(this.lockState!=State.WLC){
                     logger.log(Level.SEVERE,"Lock is : "+this.lockState+" instead of WLC");
@@ -186,7 +189,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
                         this.available.await();
                         //RLT_WLC->WLC : lock_read -> RLT_WLC
                         //             : lock_write -> WLT
-		            }catch(InterruptedException i){}
+		            }catch(InterruptedException i){ 
+                        i.printStackTrace();
+                    }       
                 }
                 if(this.lockState != State.WLC){
                     logger.log(Level.SEVERE,"Lock is : "+this.lockState+" instead of WLC");
@@ -216,7 +221,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			            this.available.await();
                         //RLT -> RLC  lock_read -> RLT
                         //            lock_write -> WLT but propagation to the server
-		            }catch(InterruptedException i){}
+		            }catch(InterruptedException i){
+                        i.printStackTrace();
+                    }
 		         }
                  if(this.lockState!=State.RLC){
                      if(this.lockState != State.WLT){

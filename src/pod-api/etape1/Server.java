@@ -7,7 +7,6 @@ import java.rmi.*;
 import java.net.*;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -16,10 +15,8 @@ public class Server extends UnicastRemoteObject implements Server_itf{
 
 	private HashMap<String,Integer> hmName; 
 	private HashMap<Integer,ServerObject> hmID;
-	private static int cpt; 				//generation of id
+	private static int cpt; 
 	private ReentrantLock mutex;
-	private Condition creation;
-	private boolean creating;
 	private static Logger logger;
 
 	public Server() throws RemoteException{

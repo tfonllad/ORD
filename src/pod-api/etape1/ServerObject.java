@@ -26,75 +26,80 @@ public class ServerObject{
 		this.obj = o;
         this.writer = null;
 		this.readerList = new ArrayList<Client_itf>();
-		logger = Logger.getLogger("ServerObject");
-		logger.setLevel(Level.SEVERE);
-        //Consistency
- 
-        this.lockState = State.NL;
-	}
+	    this.lockState = State.NL;
+	    	
+        logger = Logger.getLogger("ServerObject");
+		logger.setLevel(Level.WARNING);
+    }
 
 	public int getID(){
 		return this.id;
 	}
+
 	public enum State{
 		NL,
 		WL,
 		RL;
 	}
 
-	/**Method lock_read : called by client to get lock on the object.The
- 	* method call reduce_lock on the writer if not null
-	* @return o : up-to-date object
+	/**Method lock_read : reduce_lock on writer, switch state to RL.
 	**/
 	public synchronized void lock_read(Client_itf c){	
       	Object o = obj;
-        switch(this.lockState){
-            case WL :
-                try{
-       	            obj = writer.reduce_lock(this.id); 
-                }catch(RemoteException r){}
-                lockState = State.RL;
-                writer = null;
-            break;
+        try{
+            switch(this.lockState){
+                case WL :
+                    obj = writer.reduce_lock(this.id); //WLT/WLC -> RLC, RLT_WLC -> RLT  
+                    this.readerList.add(writer);
+                break;
 
-            case NL :
-                lockState = State.RL;
-            break;
+                case NL :
+                    ////
+                break;
 
-            case RL:
-                ////
-            break;
+                case RL:
+                    ////
+                break;
+            }
+        }catch(RemoteException r){
+            logger.log(Level.WARNING,"Could not retrieve object. Reverting state to last update in cache");
+        }finally{
+            lockState = State.RL;
+            this.readerList.add(c);
+            writer = null;
         }
-     this.readerList.add(c);
-	}	
+    }	
 
-	/**Method lock_writer : similar to lock_write, invalidate both writer
- 	* and readers.
-	* @return obj : up-to-date object
+	/**Method lock_writer : invalidate readers and writers and switch state to WL
 	**/
 	public synchronized void lock_write(Client_itf c){	
 		Object o = obj;
+        
         switch(lockState){
             case RL :
                 this.readerList.remove(c);
            	    for(Client_itf cli : readerList){
                     try{
                         cli.invalidate_reader(this.id);
-                    }catch(RemoteException r){}
+                    }catch(RemoteException e){
+                        logger.log(Level.WARNING,"A reader has been lost");
+                    }
                 }
-                this.lockState = State.WL;
             break;
             case WL :
                 try{
-                    obj = writer.invalidate_writer(this.id);
-                }catch(RemoteException r){}
+                    obj = writer.invalidate_writer(this.id);     
+                }catch(RemoteException e){
+                    logger.log(Level.WARNING,"A writer was lost");
+                }
             break;
             case NL:
-                this.lockState = State.WL;
-             break;
+                    ////
+            break;
             default : break;
         }
+        this.lockState = State.WL;
       	writer = c;
         readerList.clear();
-	}
+     }
 }
