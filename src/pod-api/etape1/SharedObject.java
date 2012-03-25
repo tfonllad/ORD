@@ -38,10 +38,11 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// invoked by the user program on the client node
 	public void lock_read() {
         boolean update = false;
-
-        //////////
         lock.lock();
-	        logger.log(Level.INFO,"lock_read() :"+this.lockState);
+        
+        //We update the State of the sharedObject
+	    
+            logger.log(Level.INFO,"lock_read() :"+this.lockState);
             switch(this.lockState){
 			case RLC :
 				this.lockState=State.RLT;
@@ -60,7 +61,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
             break;
 		}
         lock.unlock();
-        /////////
+        
+        //We now request a lock from the server if needed.
+        
         logger.log(Level.FINE,"lock_read : release the lock with :"+lockState+".");
         if(update){
             logger.log(Level.FINE,"lock_read : before propagation :"+lockState+".");
@@ -71,8 +74,10 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	// invoked by the user program on the client node
 	public void lock_write() {
         boolean update = false;
-        ///////////
         lock.lock();
+        
+        //We update the State of the SharedObject
+        
         logger.log(Level.INFO,"lock_write() "+this.lockState+".");
         switch(this.lockState){
             case WLC:
@@ -93,8 +98,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	    }
         logger.log(Level.INFO,"lock_write : release the lock with :"+lockState+".");
         lock.unlock();
-        ////////
-             
+        
+        //We now request a lock from the server if neede.  
+        
         if(update){
             logger.log(Level.FINE,"lock_write : before propagation :"+lockState+".");
             this.obj = client.lock_write(this.id);
@@ -107,6 +113,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public void unlock(){
         logger.log(Level. FINE,"unlock() "+lockState+".");
         this.lock.lock();
+
+        //We update the State
+       
         logger.log(Level.FINE,"unlock taking  mutex :"+lockState+".");
         switch(this.lockState){
 	        case RLT:
@@ -121,6 +130,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 logger.log(Level.INFO,"Incoherent unlock with : "+lockState+".");
             break;
 		}
+
+       // We now signal any waiting thread in invalidation
+
        this.available.signal();	
        logger.log(Level.INFO,"SIGNAL : "+ this.lockState);
        this.lock.unlock();
@@ -130,13 +142,19 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public Object reduce_lock() {
         this.lock.lock();
 
+        //W
          switch(this.lockState){
             case WLT:
 		        while(this.lockState==State.WLT||this.lockState==State.RLT_WLC){
-			        try{		   
+			        try{
+
+                        //Await for reader/writer to unlock
+                        
 				        this.available.await();
-                        //WLT->WLC. lock_write -> WLT 
-                        //          lock_read  -> RLT_WLC
+
+                        //WLT->WLCi : lock_write -> WLT 
+                        //            lock_read  -> RLT_WLC
+                               
 		            }catch(InterruptedException i){
                         i.printStackTrace();  
                     }
@@ -144,6 +162,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 if(this.lockState != State.WLC){
                     logger.log(Level.SEVERE,"Lock is : "+this.lockState+" instead of WLC");
                 }
+
+                // WLC -> RLC
+               
                 this.lockState = State.RLC;	
 			break;
 			case WLC:
@@ -169,9 +190,14 @@ public class SharedObject implements Serializable, SharedObject_itf {
            case WLT:
                 while(this.lockState==State.WLT||this.lockState==State.RLT_WLC){
 			        try{		   
+
+                        // Wait for writer to unlock
+
 			            this.available.await();
+
                         //WLT->WLC : lock_write -> WLT
                         //           lock_read -> RLT_WLC
+                        
 		            }catch(InterruptedException i){
                         i.printStackTrace();
                     }
@@ -179,15 +205,23 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 if(this.lockState!=State.WLC){
                     logger.log(Level.SEVERE,"Lock is : "+this.lockState+" instead of WLC");
                 }
+
+                // WLC -> NL
+                
                 this.lockState = State.NL;
            break;
 
            case RLT_WLC:
                 while(this.lockState==State.RLT_WLC||this.lockState==State.WLT){
  			        try{
+                        
+                        // Wait for reader/writer to unlock
+
                         this.available.await();
+
                         //RLT_WLC->WLC : lock_read -> RLT_WLC
                         //             : lock_write -> WLT
+                        
 		            }catch(InterruptedException i){ 
                         i.printStackTrace();
                     }       
@@ -195,6 +229,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
                 if(this.lockState != State.WLC){
                     logger.log(Level.SEVERE,"Lock is : "+this.lockState+" instead of WLC");
                 }
+
+                // WLC -> NL
+
                 this.lockState = State.NL;
            break;
            case WLC:
@@ -216,30 +253,49 @@ public class SharedObject implements Serializable, SharedObject_itf {
          switch(this.lockState){
              case RLT:
                  while(this.lockState==State.RLT){
-			        try{		   
+			        try{
+
+                        // Waiting reader to unlock
+                       
 			            this.available.await();
+
                         //RLT -> RLC  lock_read -> RLT
-                        //            lock_write -> WLT but propagation to the server
+                        //            lock_write -> WLT 
+                        //
 		            }catch(InterruptedException i){
                         i.printStackTrace();
                     }
 		         }
+
                  if(this.lockState!=State.RLC){
+                     
+                     // This thread was signaled but didn"t get the lock before another Client
+                     // This Client asked for lock_write thus gained WLT and released the lock.
+                     // This thread took the lock before the lock_write was propagated to the Server.
+                     // This Client will be removed from the reader list by the caller of this function.
+                     // When he'll ask the Server, his request will be normally handled.
+
                      if(this.lockState != State.WLT){
-                            logger.log(Level.SEVERE,"Lock is "+this.lockState+" instead of WLT.");
+                        logger.log(Level.SEVERE,"Lock is "+this.lockState+" instead of WLT.");
                      }
                  }else{
+                     // The reader is normally invalidated.
                     this.lockState = State.NL;
                  }
               break;
+
               case RLC:
                 this.lockState = State.NL;
               break;
-              case WLT ://still a reader : happens when reader is set to WLT, and invalidated before the lock_write is propagated
-                        //to the server. He will invalidate any other writer/reader when he tooks the lock.
-                        // do nothing  
-                        logger.log(Level.WARNING,"inv_reader OK if WLC : " +this.lockState+".");
+
+              case WLT :
+                
+              // A Client asked for a lock_write thus the object was set to WLT.
+              // The invalidation came after the release of the lock by the Client but before the propagation of lock_write.
+             
+                logger.log(Level.WARNING,"inv_reader OK if WLC : " +this.lockState+".");
               break;
+
               default:
                 logger.log(Level.SEVERE,"inv_reader: Lock incoherent :"+lockState+".");
               break;

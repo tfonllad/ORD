@@ -20,10 +20,6 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		super();
 	}
 
-	public static Object getObject(int id){
-		return hmID.get(id).obj;
-	}
-	
 ///////////////////////////////////////////////////
 //         Interface to be used by applications
 ///////////////////////////////////////////////////
@@ -51,21 +47,24 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 	public static SharedObject lookup(String name){
 		int id;
-		SharedObject so=null;
-		
+		SharedObject so = null;	
 		try{
             logger.log(Level.FINE,"Appel Server.lookup()");
 			id = server.lookup(name);
-			
+			//if the object was already there
 			if(hmID.containsKey(id)){
+                //we return it
 			 	so = hmID.get(id);
 			}else{
-				logger.log(Level.FINE,"lookup");
-				id = server.lookup(name);
+				logger.log(Level.FINE,"lookup");			
 				if(id==0){
+                    //if the object doesn't exist on the server
 					so = null;
+                    //we return null
 				}else{
+                    //we create a local copy
 					so = new SharedObject(id,null,(Client)client);
+                    //the actual Object will be recovered after a lock request
 					hmID.put(id,so);
 				}
 			}
@@ -77,10 +76,12 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	}		
 	
 	// binding in the name server
+    /** Register a SharedObject under a specific name
+     * @param name : the name of the SharedObject
+     * @param so : the ServerObject
+     */
 	public static void register(String name, SharedObject_itf so) {
-		//Enregistrement local	}
 		int id =((SharedObject) so).getID();
-		System.out.println(id);
 		try{
 			server.register(name,id);
 		}catch(RemoteException r){
@@ -99,8 +100,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		int id = -1;
 		SharedObject so = null;
 
-		try{		
-			id = server.create(o);		
+		try{
+            //get an id from the server
+			id = server.create(o);
+            //create a local representation
 			so = new SharedObject(id,o,(Client)client);
 			hmID.put(id,so);
 				
