@@ -7,6 +7,7 @@ public class Sentence_stub extends SharedObject implements Sentence_itf, java.io
 	public String read() {
 		Sentence s = (Sentence)obj;
 		return s.read();	
+	
 	}
 	
 }
