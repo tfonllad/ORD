@@ -6,7 +6,32 @@ import java.lang.reflect.*;
 
 public class StubGenerator {
 
-	public static File introspection(Object o) throws IOException{
+   
+    public static ArrayList<String> registre;
+    public static JavaCompiler compiler;
+
+    public StubGenerator(){
+        registre = new ArrayList<String>;
+        compiler = ToolProvider.getSystemJavaCompiler();
+    } 
+    
+    public static void generate_and_compile(Object o){
+        String name = o.getClass.getSimpleName();
+        File file;
+        if(registre.contains(name)){
+            // le _stub.java a déja été créé et compilé
+        }else{
+            file = create_stub_file(o);
+            compile(file);
+            registre.add(name);
+        }
+    }
+    
+    public static void compile(File f){
+
+    }
+
+	public static File create_stub_file(Object o) throws IOException{
 
 		String className=o.getClass().getSimpleName();
 		File f = new File("./stub/"+className + "_stub.java");
@@ -101,7 +126,7 @@ public class StubGenerator {
     public static void main(String args[]){
         Sentence s = new Sentence();
         try{
-            StubGenerator.introspection(s);
+            StubGenerator.create_stub_file(s);
         }catch(IOException e){
             e.printStackTrace();
             System.exit(-1);
