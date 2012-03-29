@@ -88,6 +88,21 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		}
 	}
 
+    // Dans cette étape, on cosidère que le stub existe et a été compilé.
+    // On l'instencie en créant le SharedObject.
+
+    public SharedObject create_stub(int i, Object o){
+        String class_name = o.getClass().getName()+"_stub";
+        Class classe = Class.forname(class_name);
+
+        // On récupère le constructeur et on instancie
+        
+        Constructor cons = classe.getConstructor({Integer.class,Object.class});
+        SharedObject so = cons.newInstance({i,o});
+        
+        return so;
+    }
+        
 	// creation of a shared object
 	/**Method create : give o to the server wich will deliver id and cache
  	* it. 
@@ -97,20 +112,21 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public static SharedObject create(Object o) {
 		int id = -1;
 		SharedObject so = null;
-
+        
 		try{
             //get an id from the server
 			id = server.create(o);
+            // generate and compile x_stub.java
+            StubGenerator.generate_and_compile(o);          
             //create a local representation
-			so = new SharedObject(id,o,(Client)client);
+			so = Client.create_stub(id,o);
 			hmID.put(id,so);
 				
 	 	}catch(RemoteException r){
 			logger.log(Level.SEVERE,"Connexion Lost");
 			System.exit(-1);
 		}
-		return so;		
-		
+		return so;			
 	}
 	
 /////////////////////////////////////////////////////////////

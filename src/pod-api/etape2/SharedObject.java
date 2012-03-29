@@ -9,7 +9,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	private int id;
 	public Object obj;		
 	private State lockState;
-	private Client client;
 	private static Logger logger;
     private ReentrantLock lock;
     private Condition available;
@@ -23,11 +22,10 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		RLT_WLC;
 	}
 
-	public SharedObject(int id,Object object,Client c){
+	public SharedObject(int id,Object object){
 		this.id = id;
 		this.obj = object;
 		this.lockState = State.NL;
-		this.client = c;
         this.lock = new ReentrantLock();
         this.available = lock.newCondition();
         
@@ -64,7 +62,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
         
         logger.log(Level.FINE,"lock_read : release the lock with :"+lockState+".");
         if(update){
-            this.obj = client.lock_read(this.id);
+            this.obj = Client.lock_read(this.id);
         }
 	}
 
@@ -97,7 +95,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
         //We now request a lock from the server if neede.  
         
         if(update){
-            this.obj = client.lock_write(this.id);
+            this.obj = Client.lock_write(this.id);
         }
 
     } 
