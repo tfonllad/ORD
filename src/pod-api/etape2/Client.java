@@ -7,9 +7,10 @@ import java.util.HashMap;
 import java.lang.*;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import javax.tools.*;
+import java.lang.reflect.*;
 
 public class Client extends UnicastRemoteObject implements Client_itf {
-	
 	
 	private static HashMap<Integer,SharedObject> hmID;
 	private static Server_itf server;
@@ -28,8 +29,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public static void init() {
 		logger.setLevel(Level.SEVERE);
         hmID = new HashMap<Integer,SharedObject>();
+        StubGenerator stub = new StubGenerator();
 		try{  	
-			client = new Client();	
+			client = new Client();
+
 			int port = 1099; 
 			server = (Server_itf)Naming.lookup("//"+"localhost"+":"+String.valueOf(port)+"/Server");
 			logger.log(Level.FINE,"Server found");
@@ -61,7 +64,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
                     //we return null
 				}else{
                     //we create a local copy
-					so = new SharedObject(id,null,(Client)client);
+					so = new SharedObject(id);
                     //the actual Object will be recovered after a lock request
 					hmID.put(id,so);
 				}
@@ -91,14 +94,37 @@ public class Client extends UnicastRemoteObject implements Client_itf {
     // Dans cette étape, on cosidère que le stub existe et a été compilé.
     // On l'instencie en créant le SharedObject.
 
-    public SharedObject create_stub(int i, Object o){
+    public static SharedObject create_stub(int i, Object o){
         String class_name = o.getClass().getName()+"_stub";
-        Class classe = Class.forname(class_name);
+        Class classe = o.getClass();
 
         // On récupère le constructeur et on instancie
+        Class[] paramType = new Class[2];
+        Object[] param = new Object[2];
+        Constructor cons=null;
+        SharedObject so = null;
+
+        paramType[0] = Integer.class;
+        paramType[1] = Object.class;
+
+        param[0] = i;
+        param[1] = o;
         
-        Constructor cons = classe.getConstructor({Integer.class,Object.class});
-        SharedObject so = cons.newInstance({i,o});
+        try{
+            cons = classe.getConstructor(paramType);
+        }catch(NoSuchMethodException e){
+            e.printStackTrace();
+        }
+        try{
+             so = (SharedObject) cons.newInstance(param);
+        }catch(InstantiationException e){
+             e.printStackTrace();
+             System.exit(-2);
+        }catch(IllegalAccessException e1){
+            System.exit(-3);
+        }catch(InvocationTargetException e1){
+            System.exit(-4);
+        }
         
         return so;
     }

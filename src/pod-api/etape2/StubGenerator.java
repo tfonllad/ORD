@@ -3,45 +3,53 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import javax.tools.*;
 
 public class StubGenerator {
-
-   
+  
     public static ArrayList<String> registre;
     public static JavaCompiler compiler;
     public static StandardJavaFileManager fm;
     public static DiagnosticCollector<JavaFileObject> diagnostics;
-    
+
     public StubGenerator(){
-        registre = new ArrayList<String>;   
+        registre = new ArrayList<String>();   
         compiler = ToolProvider.getSystemJavaCompiler();
         diagnostics =  new DiagnosticCollector<JavaFileObject>();
         StandardJavaFileManager fm = compiler.getStandardFileManager(diagnostics, null, null);
-
     } 
     
     public static void generate_and_compile(Object o){
-        String name = o.getClass.getSimpleName();
-        String stub_name;
-    
-        if(registre.contains(name+"_stub.java")){
+        String name = o.getClass().getSimpleName();
+   
+        if(registre.contains(name)){
             // le _stub.java a déja été créé et compilé
         }else{
-            stub_name = create_stub_file(o);
-            compiler.run(null,null,null,stub_name);
-            registre.add(stub_name);
+            File f=null;
+            try{
+                f = create_stub_file(o);
+            }catch(IOException e){
+                System.out.println("File_stub not found");
+                System.exit(-1);
+            }
+     
+            Iterable compilationUnits =fm.getJavaFileObjectsFromFiles(Arrays.asList(f));
+            compiler.getTask(null, fm, null, null, null, compilationUnits).call();
+            registre.add(name);
         }
     }
     
    
-	public static String create_stub_file(Object o) throws IOException{
+	public static File create_stub_file(Object o) throws IOException{
 
 		String className=o.getClass().getSimpleName();
         String stub_name = className + "_stub.java";
 		File f = new File(stub_name);
 		BufferedWriter buffer = new BufferedWriter(new FileWriter(f));
         String text = "";
-		text += "public class " + className + "_stub " + "extends SharedObject, ";
+		text += "public class " + className + "_stub " + "extends SharedObject ";
 		text += "implements "   + className + "_itf, " + "java.io.Serializable {";
 		text += "\n" + "\n";
 
@@ -52,9 +60,12 @@ public class StubGenerator {
 		text += "\n";
         text += "\t"+"}";
         text += "\n";
+        // attribute obj !
+
+
 
         // Methods
-		Method[] methods = o.getClass().getMethods();
+		Method[] methods = o.getClass().getDeclaredMethods();
 
 		for (Method m : methods){
 			String method_name = m.getName();
@@ -110,13 +121,12 @@ public class StubGenerator {
 
             // body of method
                 
-            text += "\t" + "\t";
-            text += "("+className + ")object = ("+className+").obj ;";
-            text += "\n" + "\t" +"\t";
+                 text += "\n" + "\t" +"\t";
             if(return_type.equals("void")){
-                text += "object."+method_name+"("+arg_line+");";
+                text += "( ("+className+") obj )."+method_name+"("+arg_line+");";
             }else{
-                text += "return object."+method_name+"("+arg_line+");";
+                text += "return ( ("+className+") obj )."+method_name+"("+arg_line+");";
+
             }
             text += "\n" + "\t" + "}";
             text += "\n";
@@ -124,7 +134,7 @@ public class StubGenerator {
         text += "\n" + '}';
         buffer.write(text);
         buffer.close();
-        return stub_name;
+        return f;
 	}
 
     public static void main(String args[]){
