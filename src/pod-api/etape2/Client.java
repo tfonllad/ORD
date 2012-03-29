@@ -96,27 +96,31 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
     public static SharedObject create_stub(int i, Object o){
         String class_name = o.getClass().getName()+"_stub";
-        Class classe = o.getClass();
-
-        // On récupère le constructeur et on instancie
-        Class[] paramType = new Class[2];
-        Object[] param = new Object[2];
-        Constructor cons=null;
-        SharedObject so = null;
-
-        paramType[0] = Integer.class;
-        paramType[1] = Object.class;
-
-        param[0] = i;
-        param[1] = o;
-        
+        Class classe = null;
         try{
-            cons = classe.getConstructor(paramType);
+             classe = Class.forName(class_name+".class");
+        }catch(ClassNotFoundException e){
+            e.printStackTrace();
+        }         
+        // On récupère le constructeur et on instancie le stub
+        Constructor cons = null; 
+        SharedObject so = null;
+        Object[] param = new Object[2];
+        param[0]= i;
+        param[1]= o;
+        
+        try{ 
+            cons = classe.getDeclaredConstructor(new Class[]{int.class, Object.class});
         }catch(NoSuchMethodException e){
             e.printStackTrace();
         }
+        if(cons==null){
+            System.out.println("fuck");
+            System.exit(-1);
+        }
+        System.out.println(cons.toString());
         try{
-             so = (SharedObject) cons.newInstance(param);
+             so = (SharedObject) cons.newInstance(i,o);
         }catch(InstantiationException e){
              e.printStackTrace();
              System.exit(-2);
@@ -143,7 +147,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
             //get an id from the server
 			id = server.create(o);
             // generate and compile x_stub.java
-            StubGenerator.generate_and_compile(o);          
+            StubGenerator.generate_and_compile(o);
+            try{
+                Thread.sleep(100);
+            }catch(InterruptedException e){}
             //create a local representation
 			so = Client.create_stub(id,o);
 			hmID.put(id,so);

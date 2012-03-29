@@ -23,25 +23,25 @@ public class StubGenerator {
     
     public static void generate_and_compile(Object o){
         String name = o.getClass().getSimpleName();
-   
+         
         if(registre.contains(name)){
             // le _stub.java a déja été créé et compilé
         }else{
-            File f=null;
             try{
-                f = create_stub_file(o);
+                create_stub_file(o);
             }catch(IOException e){
                 System.out.println("File_stub not found");
                 System.exit(-1);
             }
-     
-            Iterable compilationUnits =fm.getJavaFileObjectsFromFiles(Arrays.asList(f));
-            compiler.getTask(null, fm, null, null, null, compilationUnits).call();
+            int compilationResult = compiler.run(null,null,null,"-d",".",name+".java");
+            if(compilationResult == 0){
+                System.out.println("Compilation is successful");
+            }else{
+                System.out.println("Compilation Failed");
+            }
             registre.add(name);
         }
     }
-    
-   
 	public static File create_stub_file(Object o) throws IOException{
 
 		String className=o.getClass().getSimpleName();
