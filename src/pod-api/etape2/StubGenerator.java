@@ -9,7 +9,7 @@ import javax.tools.*;
 
 public class StubGenerator {
   
-    public static ArrayList<String> registre;
+    public static ArrayList<String> registre ;
     public static JavaCompiler compiler;
     public static StandardJavaFileManager fm;
     public static DiagnosticCollector<JavaFileObject> diagnostics;
@@ -33,7 +33,7 @@ public class StubGenerator {
                 System.out.println("File_stub not found");
                 System.exit(-1);
             }
-            int compilationResult = compiler.run(null,null,null,"-d",".",name+".java");
+            int compilationResult = compiler.run(null,null,null,"-d",".",name+"_stub.java");
             if(compilationResult == 0){
                 System.out.println("Compilation is successful");
             }else{
@@ -140,8 +140,9 @@ public class StubGenerator {
     public static void main(String args[]){
         Sentence s = new Sentence();
         try{
-            StubGenerator.create_stub_file(s);
-        }catch(IOException e){
+        	new StubGenerator();
+            StubGenerator.generate_and_compile(s);
+        }catch(Exception e){
             e.printStackTrace();
             System.exit(-1);
         }

@@ -95,10 +95,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
     // On l'instencie en créant le SharedObject.
 
     public static SharedObject create_stub(int i, Object o){
-        String class_name = o.getClass().getName()+"_stub";
+        String class_name = o.getClass().getSimpleName()+"_stub";
         Class classe = null;
         try{
-             classe = Class.forName(class_name+".class");
+             classe = Class.forName(class_name);
         }catch(ClassNotFoundException e){
             e.printStackTrace();
         }         
