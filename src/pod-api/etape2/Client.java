@@ -233,7 +233,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	**/
 
 	public void invalidate_reader(int id) throws java.rmi.RemoteException {
-        hmID.get(id).invalidate_reader();
+        if(hmID.containsValue(id)){ // lookup -> enregistrement lecteur alors que l'objet existe pas
+            hmID.get(id).invalidate_reader();
+        }
 	}
 
 	// receive a writer invalidation request from the server
