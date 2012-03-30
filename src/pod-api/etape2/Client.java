@@ -7,9 +7,10 @@ import java.util.HashMap;
 import java.lang.*;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import javax.tools.*;
+import java.lang.reflect.*;
 
 public class Client extends UnicastRemoteObject implements Client_itf {
-	
 	
 	private static HashMap<Integer,SharedObject> hmID;
 	private static Server_itf server;
@@ -28,8 +29,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	public static void init() {
 		logger.setLevel(Level.SEVERE);
         hmID = new HashMap<Integer,SharedObject>();
+        StubGenerator stub = new StubGenerator();
 		try{  	
-			client = new Client();	
+			client = new Client();
+
 			int port = 1099; 
 			server = (Server_itf)Naming.lookup("//"+"localhost"+":"+String.valueOf(port)+"/Server");
 			logger.log(Level.FINE,"Server found");
@@ -61,7 +64,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
                     //we return null
 				}else{
                     //we create a local copy
-					so = new SharedObject(id,null,(Client)client);
+					so = new SharedObject(id);
                     //the actual Object will be recovered after a lock request
 					hmID.put(id,so);
 				}
@@ -91,14 +94,41 @@ public class Client extends UnicastRemoteObject implements Client_itf {
     // Dans cette étape, on cosidère que le stub existe et a été compilé.
     // On l'instencie en créant le SharedObject.
 
-    public SharedObject create_stub(int i, Object o){
+    public static SharedObject create_stub(int i, Object o){
         String class_name = o.getClass().getName()+"_stub";
-        Class classe = Class.forname(class_name);
-
-        // On récupère le constructeur et on instancie
+        Class classe = null;
+        try{
+             classe = Class.forName(class_name+".class");
+        }catch(ClassNotFoundException e){
+            e.printStackTrace();
+        }         
+        // On récupère le constructeur et on instancie le stub
+        Constructor cons = null; 
+        SharedObject so = null;
+        Object[] param = new Object[2];
+        param[0]= i;
+        param[1]= o;
         
-        Constructor cons = classe.getConstructor({Integer.class,Object.class});
-        SharedObject so = cons.newInstance({i,o});
+        try{ 
+            cons = classe.getDeclaredConstructor(new Class[]{int.class, Object.class});
+        }catch(NoSuchMethodException e){
+            e.printStackTrace();
+        }
+        if(cons==null){
+            System.out.println("fuck");
+            System.exit(-1);
+        }
+        System.out.println(cons.toString());
+        try{
+             so = (SharedObject) cons.newInstance(i,o);
+        }catch(InstantiationException e){
+             e.printStackTrace();
+             System.exit(-2);
+        }catch(IllegalAccessException e1){
+            System.exit(-3);
+        }catch(InvocationTargetException e1){
+            System.exit(-4);
+        }
         
         return so;
     }
@@ -117,7 +147,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
             //get an id from the server
 			id = server.create(o);
             // generate and compile x_stub.java
-            StubGenerator.generate_and_compile(o);          
+            StubGenerator.generate_and_compile(o);
+            try{
+                Thread.sleep(100);
+            }catch(InterruptedException e){}
             //create a local representation
 			so = Client.create_stub(id,o);
 			hmID.put(id,so);

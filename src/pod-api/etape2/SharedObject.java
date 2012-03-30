@@ -33,6 +33,18 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	    logger.setLevel(Level.SEVERE);
 	}
 
+    public SharedObject(int id){
+		this.id = id;
+		this.obj = null;
+		this.lockState = State.NL;
+        this.lock = new ReentrantLock();
+        this.available = lock.newCondition();
+        
+		logger = Logger.getLogger("SharedObject");
+	    logger.setLevel(Level.SEVERE);
+	}
+
+
 	// invoked by the user program on the client node
 	public void lock_read() {
         boolean update = false;
