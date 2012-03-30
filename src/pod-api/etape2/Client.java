@@ -49,31 +49,53 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	*@return so : the local SharedObject
 	**/
 	public static SharedObject lookup(String name){
-		int id;
+		int id = 0;
 		SharedObject so = null;	
-		try{
-			id = server.lookup(name);
-			//if the object was already there
-			if(hmID.containsKey(id)){
-                //we return it
-			 	so = hmID.get(id);
-			}else{
-				if(id==0){
-                    //if the object doesn't exist on the server
-					so = null;
-                    //we return null
-				}else{
-                    //we create a local copy
-					so = new SharedObject(id);
-                    //the actual Object will be recovered after a lock request
-					hmID.put(id,so);
-				}
-			}
-		}catch(RemoteException r){
-			logger.log(Level.SEVERE,"Connexion Lost");
-			System.exit(-1);
-		}	
-		return so;
+        try{
+            id = server.lookup(name);
+        }catch(RemoteException e){
+            logger.log(Level.SEVERE,"Server lost");
+            System.exit(-1);
+        }  
+        // L'object exite-t-il localement?
+        //
+        if(hmID.containsKey(id)){
+            so = hmID.get(id);
+        }else{
+        // On demande au server
+            
+            if(id==0){
+                // le serveur ne connait pas l'objet
+             }else{
+                 // On récupère l'objet
+                 Object o=null;
+                 try{
+                    o = server.lock_read(id,client);
+                 // On récupère le stub.class
+                 }catch(RemoteException e){}
+                
+                StubGenerator.generate_and_compile(o);   
+                String class_name = o.getClass().getSimpleName()+"_stub";
+                Class classe = null;
+                try{
+                    classe = Class.forName(class_name);
+                    Constructor cons = classe.getConstructor(new Class[]{int.class});
+                    so = (SharedObject) cons.newInstance(id);
+                  }catch(NoSuchMethodException e){
+                      e.printStackTrace();
+                  }catch(InstantiationException e){
+                      e.printStackTrace();
+                  }catch(IllegalAccessException e){
+                      e.printStackTrace();
+                  }catch(InvocationTargetException e){
+                      e.printStackTrace();
+                  }catch(ClassNotFoundException e){
+                      e.printStackTrace();
+                  }
+                hmID.put(id,so);
+             }
+        }
+        return so;
 	}		
 	
 	// binding in the name server
@@ -105,31 +127,19 @@ public class Client extends UnicastRemoteObject implements Client_itf {
         // On récupère le constructeur et on instancie le stub
         Constructor cons = null; 
         SharedObject so = null;
-        Object[] param = new Object[2];
-        param[0]= i;
-        param[1]= o;
-        
-        try{ 
-            cons = classe.getDeclaredConstructor(new Class[]{int.class, Object.class});
-        }catch(NoSuchMethodException e){
-            e.printStackTrace();
-        }
-        if(cons==null){
-            System.out.println("fuck");
-            System.exit(-1);
-        }
-        System.out.println(cons.toString());
+
         try{
-             so = (SharedObject) cons.newInstance(i,o);
-        }catch(InstantiationException e){
-             e.printStackTrace();
-             System.exit(-2);
-        }catch(IllegalAccessException e1){
-            System.exit(-3);
-        }catch(InvocationTargetException e1){
-            System.exit(-4);
-        }
-        
+         cons = classe.getDeclaredConstructor(new Class[]{int.class, Object.class});
+         so = (SharedObject) cons.newInstance(i,o);
+         }catch(NoSuchMethodException e){
+            e.printStackTrace();
+         }catch(InstantiationException e2){
+             e2.printStackTrace();
+         }catch(IllegalAccessException e3){
+            e3.printStackTrace();
+         }catch(InvocationTargetException e4){
+            e4.printStackTrace();
+         }
         return so;
     }
         
@@ -148,9 +158,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 			id = server.create(o);
             // generate and compile x_stub.java
             StubGenerator.generate_and_compile(o);
-            try{
-                Thread.sleep(100);
-            }catch(InterruptedException e){}
+        //    try{
+        //        Thread.sleep(100);
+        //    }catch(InterruptedException e){}
             //create a local representation
 			so = Client.create_stub(id,o);
 			hmID.put(id,so);

@@ -36,10 +36,11 @@ public class StubGenerator {
             int compilationResult = compiler.run(null,null,null,"-d",".",name+"_stub.java");
             if(compilationResult == 0){
                 System.out.println("Compilation is successful");
+                 registre.add(name);
             }else{
                 System.out.println("Compilation Failed");
             }
-            registre.add(name);
+           
         }
     }
 	public static File create_stub_file(Object o) throws IOException{
@@ -53,18 +54,23 @@ public class StubGenerator {
 		text += "implements "   + className + "_itf, " + "java.io.Serializable {";
 		text += "\n" + "\n";
 
-        // Constructor
+        // Constructor 1
 		text += "\t"+ "public " + className + "_stub (int id, Object o){ ";
 		text += "\n";
 		text += "\t"+"\t"+"super(id,o);";
 		text += "\n";
         text += "\t"+"}";
         text += "\n";
-        // attribute obj !
-
-
-
-        // Methods
+ 
+        // Constructor 2
+		text += "\t"+ "public " + className + "_stub (int id){ ";
+		text += "\n";
+		text += "\t"+"\t"+"super(id);";
+		text += "\n";
+        text += "\t"+"}";
+        text += "\n";
+       
+        // Methods // A revoir : redéfinir toutes les méthodes appelables y compris hérités (mais pas private ou finale)
 		Method[] methods = o.getClass().getDeclaredMethods();
 
 		for (Method m : methods){
@@ -136,18 +142,6 @@ public class StubGenerator {
         buffer.close();
         return f;
 	}
-
-    public static void main(String args[]){
-        Sentence s = new Sentence();
-        try{
-        	new StubGenerator();
-            StubGenerator.generate_and_compile(s);
-        }catch(Exception e){
-            e.printStackTrace();
-            System.exit(-1);
-        }
-        System.exit(0);
-    }
 }	
 	
 	

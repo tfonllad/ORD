@@ -3,6 +3,9 @@ public class Sentence_stub extends SharedObject implements Sentence_itf, java.io
 	public Sentence_stub (int id, Object o){ 
 		super(id,o);
 	}
+	public Sentence_stub (int id){ 
+		super(id);
+	}
 
 	public void write(String arg0) {
 

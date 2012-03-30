@@ -238,7 +238,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
            case WLC:
                 this.lockState = State.NL;
            break;
-          
+        
            default:
                     logger.log(Level.SEVERE,"inv_writer: Lock incoherent :"+lockState+".");
            break;
@@ -296,7 +296,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
              
                 logger.log(Level.WARNING,"inv_reader OK if WLC : " +this.lockState+".");
               break;
-
+              case NL :
+                // lock_read called by lookup
+              ;
               default:
                 logger.log(Level.SEVERE,"inv_reader: Lock incoherent :"+lockState+".");
               break;

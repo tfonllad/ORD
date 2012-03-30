@@ -27,7 +27,7 @@ public class Irc extends Frame {
 		
 		// look up the IRC object in the name server
 		// if not found, create it, and register it in the name server
-		Sentence_itf s = (Sentence_itf)Client.lookup("IRC");
+	    Sentence_itf s =(Sentence_itf) Client.lookup("IRC");
 		if (s == null) {
 			s = (Sentence_itf)Client.create(new Sentence());
 			Client.register("IRC", s);
